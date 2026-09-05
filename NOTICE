@@ -1,0 +1,19 @@
+geario-http
+
+This product includes software derived from ntex.
+
+  ntex — https://github.com/ntex-rs/ntex
+  Copyright (c) ntex contributors <team@ntex.rs>
+  Licensed under MIT OR Apache-2.0
+
+Derived at upstream commit 48eef5bd (ntex 4.0.0-beta.2).
+
+The following modules are ports of ntex code, with directory layout and
+crate paths adapted to geario-http. Code logic is unchanged:
+
+  geario-http/src/types/    from ntex-http
+  geario-http/src/          from ntex/src/http
+  geario-http/src/h1/       from ntex/src/http/h1
+  geario-http/src/client/   from ntex/src/client
+
+HTTP/2 was not ported; ntex routes it through the separate ntex-h2 crate.

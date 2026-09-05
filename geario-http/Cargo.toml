@@ -1,0 +1,75 @@
+[package]
+name = "geario-http"
+version = "0.1.0"
+description = "HTTP/1.1 protocol layer for geario"
+keywords = ["http", "network", "async"]
+categories = ["network-programming", "asynchronous"]
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "geario_http"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[features]
+# A server out of the box; an FFI build can turn this off and name what it needs.
+default = ["http1", "server"]
+# Everything that is implemented today.
+full = ["http1", "client", "server"]
+
+# Protocol versions
+http1 = []
+
+# Roles
+client = ["http1"]
+server = ["http1"]
+
+# Extras
+compress = ["flate2"]
+cookie = ["coo-kie", "coo-kie/percent-encode"]
+trace = []
+
+# Reserved: no implementation yet.
+openssl = []
+rustls = []
+test-server = []
+ws = []
+
+[dependencies]
+geario = { workspace = true }
+foldhash = { workspace = true }
+futures-core = { workspace = true }
+http = { workspace = true }
+httpdate = { workspace = true }
+atoi_simd = { workspace = true }
+httparse = { workspace = true }
+encoding_rs = { workspace = true }
+mime = { workspace = true }
+percent-encoding = { workspace = true }
+base64 = { workspace = true }
+serde_urlencoded = { workspace = true }
+flate2 = { workspace = true, optional = true }
+serde_json = { workspace = true }
+coo-kie = { workspace = true, optional = true }
+ntex-httparse = { workspace = true }
+bitflags = { workspace = true }
+pin-project-lite = { workspace = true }
+derive_more = { workspace = true, features = ["debug"] }
+itoa = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+serde_json = { workspace = true }
+geario = { workspace = true }
+rand = { workspace = true }
+env_logger = { workspace = true }
+futures-util = { workspace = true }

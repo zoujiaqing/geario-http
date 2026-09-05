@@ -1,75 +1,54 @@
-[package]
-name = "geario-http"
-version = "0.1.0"
-description = "HTTP/1.1 protocol layer for geario"
-keywords = ["http", "network", "async"]
-categories = ["network-programming", "asynchronous"]
-authors.workspace = true
-repository.workspace = true
-license.workspace = true
-edition.workspace = true
-rust-version.workspace = true
+[workspace]
+resolver = "2"
+members = ["geario-http", "geario-http-ffi"]
 
-[lib]
-name = "geario_http"
-path = "src/lib.rs"
+[workspace.package]
+authors = ["zoujiaqing <zoujiaqing@gmail.com>"]
+repository = "https://github.com/zoujiaqing/geario-http"
+license = "MIT OR Apache-2.0"
+edition = "2024"
+rust-version = "1.95"
 
-[lints]
-workspace = true
+[workspace.lints.rust]
+async_fn_in_trait = { level = "allow", priority = -1 }
+unknown_lints = { level = "allow", priority = -1 }
+rust_2018_idioms = "deny"
+warnings = "deny"
+missing_debug_implementations = "deny"
+unexpected_cfgs = { level = "warn", priority = -2, check-cfg = ['cfg(docsrs_dep)'] }
 
-[features]
-# A server out of the box; an FFI build can turn this off and name what it needs.
-default = ["http1", "server"]
-# Everything that is implemented today.
-full = ["http1", "client", "server"]
+[workspace.dependencies]
+geario-http = { path = "geario-http" }
+geario-http-ffi = { path = "geario-http-ffi" }
 
-# Protocol versions
-http1 = []
+# geario sits beside this checkout. It is a path dependency rather than a
+# version so the two can move together while the IO API is still settling.
+geario = { path = "../geario/geario" }
 
-# Roles
-client = ["http1"]
-server = ["http1"]
+ntex-httparse = "2.1.0"
 
-# Extras
-compress = ["flate2"]
-cookie = ["coo-kie", "coo-kie/percent-encode"]
-trace = []
-
-# Reserved: no implementation yet.
-openssl = []
-rustls = []
-test-server = []
-ws = []
-
-[dependencies]
-geario = { workspace = true }
-foldhash = { workspace = true }
-futures-core = { workspace = true }
-http = { workspace = true }
-httpdate = { workspace = true }
-atoi_simd = { workspace = true }
-httparse = { workspace = true }
-encoding_rs = { workspace = true }
-mime = { workspace = true }
-percent-encoding = { workspace = true }
-base64 = { workspace = true }
-serde_urlencoded = { workspace = true }
-flate2 = { workspace = true, optional = true }
-serde_json = { workspace = true }
-coo-kie = { workspace = true, optional = true }
-ntex-httparse = { workspace = true }
-bitflags = { workspace = true }
-pin-project-lite = { workspace = true }
-derive_more = { workspace = true, features = ["debug"] }
-itoa = { workspace = true }
-log = { workspace = true }
-serde = { workspace = true }
-thiserror = { workspace = true }
-
-[dev-dependencies]
-bincode = { workspace = true }
-serde_json = { workspace = true }
-geario = { workspace = true }
-rand = { workspace = true }
-env_logger = { workspace = true }
-futures-util = { workspace = true }
+atoi_simd = "0.18.1"
+base64 = "0.22"
+bincode = "1.3.3"
+bitflags = "2"
+coo-kie = { version = "0.18", package = "cookie" }
+derive_more = "2.0.1"
+encoding_rs = "0.8"
+env_logger = { version = "0.11", default-features = false }
+flate2 = "1.0"
+foldhash = "0.2.0"
+futures-core = { version = "0.3.33", default-features = false, features = ["alloc"] }
+futures-util = { version = "0.3.33", default-features = false, features = ["alloc"] }
+http = "1.5.0"
+httparse = "1.10.1"
+httpdate = "1.0"
+itoa = "1.0.18"
+log = "0.4"
+mime = "0.3"
+percent-encoding = "2.3"
+pin-project-lite = "0.2"
+rand = "0.9"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_urlencoded = "0.7"
+thiserror = "2"

@@ -1,0 +1,35 @@
+[package]
+name = "geario-http-ffi"
+version = "0.1.0"
+description = "C ABI for geario-http"
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "geario_http_ffi"
+# staticlib links into a Kotlin/Native binary; cdylib is for local work and
+# the JVM; rlib is additive and lets integration tests link the crate.
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[features]
+default = ["server", "client"]
+server = ["geario-http/server"]
+client = ["geario-http/client"]
+
+[dependencies]
+geario = { workspace = true }
+geario-http = { workspace = true }
+log = { workspace = true }
+
+[profile.release]
+# A panic must not cross the FFI boundary; that is undefined behaviour.
+panic = "abort"
+lto = true
+codegen-units = 1
+strip = true
