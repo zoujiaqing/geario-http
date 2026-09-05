@@ -1,16 +1,26 @@
 # geario-http
 
-HTTP protocol layer for [geario](https://github.com/zoujiaqing/geario).
+HTTP protocol layer for [geario](https://github.com/zoujiaqing/geario),
+built for Rust and Kotlin/Native from the start.
 
 Currently speaks HTTP/1.1, server and client. Derived from the HTTP layer of
 the [ntex](https://github.com/ntex-rs/ntex) framework.
 
-## Crates
+## Two front doors
 
-| Crate | What it is |
-| --- | --- |
-| `geario-http` | The protocol layer: types, HTTP/1.1 codec, server, client |
-| `geario-http-ffi` | C ABI over `geario-http`, for embedding in non-Rust hosts |
+The C ABI is not an afterthought here. Kotlin/Native is a first-class
+consumer, so `geario-http-ffi` ships in this repository and is developed
+alongside the Rust API rather than bolted on later.
+
+| Crate | Consumer | What it is |
+| --- | --- | --- |
+| `geario-http` | Rust | The protocol layer: types, HTTP/1.1 codec, server, client |
+| `geario-http-ffi` | C, Kotlin/Native | C ABI over `geario-http`, built as a staticlib and cdylib |
+
+The ABI matches the one [hyper4k](https://github.com/netonstream/hyper4k)
+already ships, so a host that speaks it can swap engines by changing a link
+line. Capability bits are derived from cargo features, so the host can ask
+at runtime what a given build actually contains.
 
 ## Layout
 

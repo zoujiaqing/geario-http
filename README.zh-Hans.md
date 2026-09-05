@@ -1,16 +1,24 @@
 # geario-http
 
-[geario](https://github.com/zoujiaqing/geario) 的 HTTP 协议层。
+[geario](https://github.com/zoujiaqing/geario) 的 HTTP 协议层，
+从设计之初就同时面向 Rust 与 Kotlin/Native。
 
 目前支持 HTTP/1.1 的服务端与客户端。源自 [ntex](https://github.com/ntex-rs/ntex)
 框架的 HTTP 层。
 
-## Crates
+## 两个入口
 
-| Crate | 内容 |
-| --- | --- |
-| `geario-http` | 协议层：类型、HTTP/1.1 codec、服务端、客户端 |
-| `geario-http-ffi` | 基于 `geario-http` 的 C ABI，供非 Rust 宿主嵌入 |
+C ABI 在这里不是补丁。Kotlin/Native 是一等消费者，所以 `geario-http-ffi`
+就放在本仓库，与 Rust API 同步演进，而不是事后再补。
+
+| Crate | 面向 | 内容 |
+| --- | --- | --- |
+| `geario-http` | Rust | 协议层：类型、HTTP/1.1 codec、服务端、客户端 |
+| `geario-http-ffi` | C、Kotlin/Native | 基于 `geario-http` 的 C ABI，产出 staticlib 与 cdylib |
+
+这套 ABI 与 [hyper4k](https://github.com/netonstream/hyper4k) 已经在用的一致，
+宿主换引擎只需改链接参数。能力位由 cargo feature 推导，宿主可以在运行时
+问出某个构建到底带了什么。
 
 ## 目录约定
 
