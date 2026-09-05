@@ -3,6 +3,7 @@
 #define GEARIO_HTTP_H
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +43,61 @@ uint64_t geario_http_server_capabilities(void);
 
 /** What the client side of this build can do. */
 uint64_t geario_http_client_capabilities(void);
+
+/* ------------------------------------------------------------------ */
+/* Server                                                             */
+/* ------------------------------------------------------------------ */
+
+/** A borrowed view of bytes geario owns. Valid only for the duration of the
+ *  callback it arrives in; copy anything you need to keep. */
+typedef struct {
+    const unsigned char *ptr;
+    size_t len;
+} GearioHttpSlice;
+
+/** A request handed to the host. `responder` outlives the callback. */
+typedef struct {
+    GearioHttpSlice method;
+    GearioHttpSlice path;
+    GearioHttpSlice query;
+    /** Headers as `name: value` lines separated by '\n'. */
+    GearioHttpSlice headers;
+    GearioHttpSlice body;
+    uint64_t responder;
+} GearioHttpRequest;
+
+/** Called once per request, on the worker owning the connection. Different
+ *  connections land on different workers, so this must be safe to call
+ *  concurrently. */
+typedef void (*GearioHttpRequestCallback)(void *user_data,
+                                          const GearioHttpRequest *req);
+
+/** Opaque server handle. */
+typedef struct GearioHttpServer GearioHttpServer;
+
+/** Start an HTTP/1.1 server. Returns NULL on a bad address or if the worker
+ *  thread cannot start. `user_data` must outlive the server. */
+GearioHttpServer *geario_http_server_start(const char *host,
+                                           uint16_t port,
+                                           GearioHttpRequestCallback on_request,
+                                           void *user_data);
+
+/** Answer a request.
+ *
+ *  Must be called on the worker that delivered the responder. Calling it from
+ *  another thread returns GEARIO_HTTP_STATUS_WRONG_THREAD: geario is
+ *  thread-per-core and its handles are not shared between workers.
+ *
+ *  `headers` is `name: value` lines separated by '\n', or NULL. */
+GearioHttpStatus geario_http_respond(uint64_t responder,
+                                     uint16_t status,
+                                     const unsigned char *headers,
+                                     size_t headers_len,
+                                     const unsigned char *body,
+                                     size_t body_len);
+
+/** Stop a server and free its handle. NULL is a no-op. */
+void geario_http_server_stop(GearioHttpServer *server);
 
 #ifdef __cplusplus
 }

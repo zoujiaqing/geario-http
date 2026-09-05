@@ -14,12 +14,15 @@ else
 LDLIBS += -lpthread -ldl -lm
 endif
 
-all: version
+all: version server
 
 version: version.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
+server: server.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
 clean:
-	rm -f version
+	rm -f version server
 
 .PHONY: all clean

@@ -125,12 +125,25 @@ hyper4k 走的是 `tokio::runtime::Builder::new_multi_thread()` —— work-stea
 
 第 3 点是 geario 相对 hyper4k 必须新增的检查项,写进实现计划。
 
+## 6b. 信号:库不得抢宿主的处理器
+
+geario 的 server 默认装 SIGINT/SIGTERM/SIGQUIT 处理器(`no_signals` 默认
+`false`)。在被链接的库里这会**静默替换掉宿主已装的处理器** —— 实测中一个 C
+程序装了自己的 SIGINT handler,起完服务后就再也收不到 Ctrl-C,无法自行退出。
+
+FFI 层必须调 `.disable_signals()`。信号是宿主的事,库无权接管。
+
+回归测试见 `geario-http-ffi/tests/lifecycle.rs`:它不发信号,而是用
+`signal()` 的返回值读回 SIGINT 当前归属 —— 发信号的测试要么不可靠、要么会
+打死测试进程。该测试已双向验证:去掉 `.disable_signals()` 会失败。
+
 ## 7. 实施顺序
 
-1. **骨架 + 元信息**:crate、cbindgen、`abi_version`、`version`、能力位。
-   验收:C 程序能链接并打印版本。
-2. **服务端**:`server_start`/`server_stop`/`respond`。
-   验收:C 程序起服务,`curl` 拿到 200。
+1. ~~**骨架 + 元信息**~~ 已完成:crate、`abi_version`、`version`、能力位。
+   验收通过:C 程序链接并正确报告 feature 推导的能力位。
+2. ~~**服务端**~~ 已完成:`server_start`/`server_stop`/`respond`。
+   验收通过:C 程序起服务,`curl` 拿到 200,自定义响应头透传,
+   keep-alive 下 `user_data` 计数正确,SIGINT 后干净退出。
 3. **流式响应**:`response_begin`/`write`/`finish`。
    验收:C 程序发 chunked 响应,`curl` 收全。
 4. **客户端**:`client_new`/`send`/`free`。
