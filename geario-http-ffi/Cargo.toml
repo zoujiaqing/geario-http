@@ -25,6 +25,7 @@ client = ["geario-http/client"]
 [dependencies]
 geario = { workspace = true }
 geario-http = { workspace = true }
+futures-core = { workspace = true }
 log = { workspace = true }
 
 [profile.release]

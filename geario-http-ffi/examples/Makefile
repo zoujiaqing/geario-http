@@ -14,7 +14,7 @@ else
 LDLIBS += -lpthread -ldl -lm
 endif
 
-all: version server
+all: version server stream
 
 version: version.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
@@ -22,7 +22,10 @@ version: version.c
 server: server.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
+stream: stream.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
 clean:
-	rm -f version server
+	rm -f version server stream
 
 .PHONY: all clean

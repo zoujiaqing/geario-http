@@ -22,6 +22,7 @@ typedef int32_t GearioHttpStatus;
 #define GEARIO_HTTP_STATUS_WRONG_THREAD  (-6)
 #define GEARIO_HTTP_STATUS_CLOSED        (-7)
 #define GEARIO_HTTP_STATUS_OOM           (-8)
+#define GEARIO_HTTP_STATUS_WRONG_STATE   (-9)
 
 /** Capability bits. Derived from cargo features, so a bit cannot claim
  *  something this build does not contain. */
@@ -95,6 +96,25 @@ GearioHttpStatus geario_http_respond(uint64_t responder,
                                      size_t headers_len,
                                      const unsigned char *body,
                                      size_t body_len);
+
+/** Send status and headers now and stream the body afterwards.
+ *
+ *  Follow with geario_http_response_write per chunk and
+ *  geario_http_response_finish at the end. Calling geario_http_respond on a
+ *  responder that is already streaming returns GEARIO_HTTP_STATUS_WRONG_STATE,
+ *  and so does the reverse. */
+GearioHttpStatus geario_http_response_begin(uint64_t responder,
+                                            uint16_t status,
+                                            const unsigned char *headers,
+                                            size_t headers_len);
+
+/** Append one chunk. The bytes are copied before this returns. */
+GearioHttpStatus geario_http_response_write(uint64_t responder,
+                                            const unsigned char *chunk,
+                                            size_t chunk_len);
+
+/** Close a streaming body. */
+GearioHttpStatus geario_http_response_finish(uint64_t responder);
 
 /** Stop a server and free its handle. NULL is a no-op. */
 void geario_http_server_stop(GearioHttpServer *server);

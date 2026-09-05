@@ -27,6 +27,9 @@ pub const GEARIO_HTTP_STATUS_WRONG_THREAD: GearioHttpStatus = -6;
 pub const GEARIO_HTTP_STATUS_CLOSED: GearioHttpStatus = -7;
 /// A real allocation failure.
 pub const GEARIO_HTTP_STATUS_OOM: GearioHttpStatus = -8;
+/// The responder is not in a state that allows this call, such as answering
+/// one that is already streaming.
+pub const GEARIO_HTTP_STATUS_WRONG_STATE: GearioHttpStatus = -9;
 
 /// ABI revision. Bumped whenever a struct layout or a function signature
 /// changes in a way a compiled caller could not survive.

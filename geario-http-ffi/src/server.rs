@@ -4,8 +4,10 @@ use std::ffi::{CStr, c_char, c_void};
 use std::net::SocketAddr;
 use std::sync::mpsc;
 
+use geario::bytes::Bytes;
 use geario::service::cfg::SharedCfg;
 use geario_http::{HttpService, Request, Response, StatusCode};
+use geario_http::body::BodyStream;
 use geario_http::header::{HeaderName, HeaderValue};
 
 use crate::abi::*;
@@ -210,19 +212,53 @@ async fn dispatch(handler: Handler, req: Request) -> Response {
     }
 }
 
-fn build_response(reply: Reply) -> Response {
-    let status =
-        StatusCode::from_u16(reply.status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+/// Wraps a chunk stream so the body sees `Result<Bytes, _>`.
+///
+/// A dedicated type rather than `StreamExt::map`, which geario does not carry
+/// and which would mean pulling futures-util into the FFI crate for one call.
+struct OkStream(geario::util::channel::mpsc::Receiver<Bytes>);
+
+impl futures_core::Stream for OkStream {
+    type Item = Result<Bytes, std::io::Error>;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        std::pin::Pin::new(&mut self.0).poll_next(cx).map(|o| o.map(Ok))
+    }
+}
+
+fn apply_head(
+    status: u16,
+    headers: &[(Vec<u8>, Vec<u8>)],
+) -> geario_http::ResponseBuilder {
+    let status = StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     let mut builder = Response::build(status);
-    for (name, value) in &reply.headers {
-        if let (Ok(n), Ok(v)) = (
-            HeaderName::from_bytes(name),
-            HeaderValue::from_bytes(value),
-        ) {
+    for (name, value) in headers {
+        if let (Ok(n), Ok(v)) = (HeaderName::from_bytes(name), HeaderValue::from_bytes(value))
+        {
             builder.header(n, v);
         }
     }
-    builder.body(reply.body)
+    builder
+}
+
+fn build_response(reply: Reply) -> Response {
+    match reply {
+        Reply::Once {
+            status,
+            headers,
+            body,
+        } => apply_head(status, &headers).body(body),
+        Reply::Stream {
+            status,
+            headers,
+            chunks,
+        } => {
+            apply_head(status, &headers).body(BodyStream::new(OkStream(chunks)))
+        }
+    }
 }
 
 /// Answer a request.
@@ -244,6 +280,12 @@ pub unsafe extern "C" fn geario_http_respond(
     body_ptr: *const u8,
     body_len: usize,
 ) -> GearioHttpStatus {
+    // One-shot and streaming are mutually exclusive on a responder: the head
+    // is already on the wire, so there is nothing left to decide.
+    if matches!(responder::phase(responder), responder::Phase::Streaming) {
+        return GEARIO_HTTP_STATUS_WRONG_STATE;
+    }
+
     let headers = parse_headers(headers_ptr, headers_len);
     let body = if body_ptr.is_null() || body_len == 0 {
         Vec::new()
@@ -253,7 +295,7 @@ pub unsafe extern "C" fn geario_http_respond(
 
     match responder::deliver(
         responder,
-        Reply {
+        Reply::Once {
             status,
             headers,
             body,
@@ -282,5 +324,67 @@ pub unsafe extern "C" fn geario_http_server_stop(server: *mut GearioHttpServer) 
     }
     if let Some(t) = server.thread.take() {
         let _ = t.join();
+    }
+}
+
+/// Send status and headers now and stream the body afterwards.
+///
+/// After this returns OK, call `geario_http_response_write` for each chunk
+/// and `geario_http_response_finish` when done. Mixing this with
+/// `geario_http_respond` on the same responder is rejected.
+///
+/// # Safety
+///
+/// `headers` must be NULL or point at `headers_len` readable bytes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn geario_http_response_begin(
+    responder: u64,
+    status: u16,
+    headers_ptr: *const u8,
+    headers_len: usize,
+) -> GearioHttpStatus {
+    if matches!(responder::phase(responder), responder::Phase::Streaming) {
+        return GEARIO_HTTP_STATUS_WRONG_STATE;
+    }
+
+    let headers = parse_headers(headers_ptr, headers_len);
+    match responder::begin_stream(responder, status, headers) {
+        responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
+        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
+        responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
+    }
+}
+
+/// Append one chunk to a streaming body.
+///
+/// # Safety
+///
+/// `chunk` must be NULL or point at `chunk_len` readable bytes. The bytes are
+/// copied before this returns.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn geario_http_response_write(
+    responder: u64,
+    chunk_ptr: *const u8,
+    chunk_len: usize,
+) -> GearioHttpStatus {
+    let chunk = if chunk_ptr.is_null() || chunk_len == 0 {
+        Bytes::new()
+    } else {
+        Bytes::copy_from_slice(unsafe { std::slice::from_raw_parts(chunk_ptr, chunk_len) })
+    };
+    match responder::write_chunk(responder, chunk) {
+        responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
+        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
+        responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
+    }
+}
+
+/// Close a streaming body.
+#[unsafe(no_mangle)]
+pub extern "C" fn geario_http_response_finish(responder: u64) -> GearioHttpStatus {
+    match responder::finish_stream(responder) {
+        responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
+        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
+        responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
     }
 }
