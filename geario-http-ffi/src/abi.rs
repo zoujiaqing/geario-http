@@ -30,6 +30,9 @@ pub const GEARIO_HTTP_STATUS_OOM: GearioHttpStatus = -8;
 /// The responder is not in a state that allows this call, such as answering
 /// one that is already streaming.
 pub const GEARIO_HTTP_STATUS_WRONG_STATE: GearioHttpStatus = -9;
+/// Deliberate throttling to stay under a configured ceiling. Distinct from
+/// OOM so operators are not sent hunting for a memory leak that is not there.
+pub const GEARIO_HTTP_STATUS_THROTTLED: GearioHttpStatus = -10;
 
 /// ABI revision. Bumped whenever a struct layout or a function signature
 /// changes in a way a compiled caller could not survive.
@@ -50,6 +53,37 @@ pub const GEARIO_HTTP_CAP_HTTP2: u64 = 1 << 1;
 pub const GEARIO_HTTP_CAP_TLS: u64 = 1 << 2;
 /// Streaming response bodies are available.
 pub const GEARIO_HTTP_CAP_STREAMING: u64 = 1 << 3;
+
+// ---------------------------------------------------------------------------
+// Callback verdicts
+// ---------------------------------------------------------------------------
+//
+// Headers and chunks get separate types on purpose. There is no coherent
+// meaning for "pause before the next chunk" at the headers stage, and one
+// shared enum would leave that combination undefined.
+
+pub type GearioHttpHeadersAction = i32;
+pub const GEARIO_HTTP_HEADERS_CONTINUE: GearioHttpHeadersAction = 0;
+pub const GEARIO_HTTP_HEADERS_CANCEL: GearioHttpHeadersAction = 2;
+
+pub type GearioHttpChunkAction = i32;
+pub const GEARIO_HTTP_CHUNK_CONTINUE: GearioHttpChunkAction = 0;
+pub const GEARIO_HTTP_CHUNK_PAUSE: GearioHttpChunkAction = 1;
+pub const GEARIO_HTTP_CHUNK_CANCEL: GearioHttpChunkAction = 2;
+
+// ---------------------------------------------------------------------------
+// Error reporting
+// ---------------------------------------------------------------------------
+
+pub type GearioHttpErrorKind = i32;
+pub const GEARIO_HTTP_ERR_NONE: GearioHttpErrorKind = 0;
+pub const GEARIO_HTTP_ERR_CONNECT: GearioHttpErrorKind = 1;
+pub const GEARIO_HTTP_ERR_TIMEOUT: GearioHttpErrorKind = 2;
+pub const GEARIO_HTTP_ERR_PROTOCOL: GearioHttpErrorKind = 3;
+pub const GEARIO_HTTP_ERR_IO: GearioHttpErrorKind = 4;
+pub const GEARIO_HTTP_ERR_CANCELLED: GearioHttpErrorKind = 5;
+pub const GEARIO_HTTP_ERR_INVALID_URL: GearioHttpErrorKind = 6;
+pub const GEARIO_HTTP_ERR_UNSUPPORTED: GearioHttpErrorKind = 7;
 
 /// ABI revision of this build.
 #[unsafe(no_mangle)]

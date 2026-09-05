@@ -10,11 +10,17 @@ mod abi;
 mod responder;
 mod slice;
 
+#[cfg(feature = "client")]
+mod client;
+
 #[cfg(feature = "server")]
 mod server;
 
 pub use self::abi::*;
 pub use self::slice::*;
+
+#[cfg(feature = "client")]
+pub use self::client::*;
 
 #[cfg(feature = "server")]
 pub use self::server::*;

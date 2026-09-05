@@ -27,3 +27,21 @@ impl GearioHttpSlice {
         }
     }
 }
+
+/// One header, borrowed.
+#[repr(C)]
+pub struct GearioHttpHeader {
+    pub name: GearioHttpSlice,
+    pub value: GearioHttpSlice,
+}
+
+/// Why a request ended.
+#[repr(C)]
+pub struct GearioHttpError {
+    /// One of the `GEARIO_HTTP_ERR_*` constants. The stable part.
+    pub kind: crate::abi::GearioHttpErrorKind,
+    /// Protocol-level code where one exists, else 0.
+    pub protocol_code: u32,
+    /// Borrowed diagnostic text. For logs only, never branch on it.
+    pub message: GearioHttpSlice,
+}

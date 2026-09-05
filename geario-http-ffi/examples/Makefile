@@ -14,7 +14,7 @@ else
 LDLIBS += -lpthread -ldl -lm
 endif
 
-all: version server stream
+all: version server stream roundtrip
 
 version: version.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
@@ -25,7 +25,10 @@ server: server.c
 stream: stream.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
 
+roundtrip: roundtrip.c
+	$(CC) $(CFLAGS) -o $@ $< $(LDLIBS)
+
 clean:
-	rm -f version server stream
+	rm -f version server stream roundtrip
 
 .PHONY: all clean

@@ -27,6 +27,7 @@ geario = { path = "../geario/geario" }
 
 ntex-httparse = "2.1.0"
 
+async-channel = "2"
 atoi_simd = "0.18.1"
 base64 = "0.22"
 bincode = "1.3.3"

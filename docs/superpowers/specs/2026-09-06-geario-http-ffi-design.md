@@ -144,11 +144,19 @@ FFI 层必须调 `.disable_signals()`。信号是宿主的事,库无权接管。
 2. ~~**服务端**~~ 已完成:`server_start`/`server_stop`/`respond`。
    验收通过:C 程序起服务,`curl` 拿到 200,自定义响应头透传,
    keep-alive 下 `user_data` 计数正确,SIGINT 后干净退出。
-3. **流式响应**:`response_begin`/`write`/`finish`。
-   验收:C 程序发 chunked 响应,`curl` 收全。
-4. **客户端**:`client_new`/`send`/`free`。
-   验收:C 程序请求自己的服务端。
-5. **背压**:`cancel`/`resume`/`inflight_count`/`paused_stream_count`。
+3. ~~**流式响应**~~ 已完成:`response_begin`/`write`/`finish`。
+   验收通过:`curl` 收到 `transfer-encoding: chunked` 与全部 chunk;
+   一次性与流式在同一 responder 上互斥,两个方向都拒绝。
+4. ~~**客户端**~~ 已完成:`client_new`/`options_init`/`request_init`/`send`/
+   `close`/`free`。验收通过:C 程序同时起服务端与客户端并完成三次往返。
+5. ~~**背压**~~ 已完成:`cancel`/`resume`/`inflight_count`/
+   `paused_stream_count`,以及 `max_inflight_requests` 上限。
+
+   实现中踩到一个真 bug:`inflight` 原本在 worker 线程的任务里递增,而
+   `client_send` 排完队就返回,导致八次发送在计数器仍为 0 时全部放行 ——
+   **上限形同虚设**。改为在 `client_send` 里用 `fetch_update` 原子地
+   "检查并占位",排队失败时归还。回归测试见
+   `geario-http-ffi/tests/client_abi.rs`。
 6. **句柄的线程归属检查**(第 6 节第 3 点)。
 7. **与 hyper4k 的 ABI 一致性测试**:同一份 C 测试程序分别链接
    `libhyper4k.a` 与 `libgeario_http_ffi.a`,行为必须一致。
