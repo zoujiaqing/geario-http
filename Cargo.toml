@@ -19,12 +19,27 @@ workspace = true
 
 [features]
 default = []
+cookie = ["coo-kie", "coo-kie/percent-encode"]
+# Reserved for the HTTP test server, which is not ported yet.
+test-server = []
 
 [dependencies]
 geario = { workspace = true }
 foldhash = { workspace = true }
 futures-core = { workspace = true }
 http = { workspace = true }
+httpdate = { workspace = true }
+atoi_simd = { workspace = true }
+httparse = { workspace = true }
+encoding_rs = { workspace = true }
+mime = { workspace = true }
+percent-encoding = { workspace = true }
+serde_json = { workspace = true }
+coo-kie = { workspace = true, optional = true }
+ntex-httparse = { workspace = true }
+bitflags = { workspace = true }
+pin-project-lite = { workspace = true }
+derive_more = { workspace = true, features = ["debug"] }
 itoa = { workspace = true }
 log = { workspace = true }
 serde = { workspace = true }
@@ -33,4 +48,6 @@ thiserror = { workspace = true }
 [dev-dependencies]
 bincode = { workspace = true }
 serde_json = { workspace = true }
+geario = { workspace = true }
+rand = { workspace = true }
 futures-util = { workspace = true }
