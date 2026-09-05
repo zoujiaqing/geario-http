@@ -35,14 +35,17 @@ compress = ["flate2"]
 cookie = ["coo-kie", "coo-kie/percent-encode"]
 trace = []
 
+# TLS through geario's rustls layer.
+rustls = ["geario/rustls", "tls_rustls", "webpki-roots"]
+
 # Reserved: no implementation yet.
 openssl = []
-rustls = []
 test-server = []
 ws = []
 
 [dependencies]
 geario = { workspace = true }
+rcgen = { workspace = true }
 foldhash = { workspace = true }
 futures-core = { workspace = true }
 http = { workspace = true }
@@ -60,6 +63,8 @@ coo-kie = { workspace = true, optional = true }
 ntex-httparse = { workspace = true }
 bitflags = { workspace = true }
 pin-project-lite = { workspace = true }
+tls_rustls = { workspace = true, optional = true }
+webpki-roots = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["debug"] }
 itoa = { workspace = true }
 log = { workspace = true }

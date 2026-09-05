@@ -68,7 +68,9 @@ impl ClientBuilder<Identity> {
         {
             use tls_rustls::RootCertStore;
 
-            let protos = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
+            // Only HTTP/1.1 is implemented, so advertising h2 would invite a
+            // server to pick a protocol this build cannot speak.
+            let protos = vec![b"http/1.1".to_vec()];
             let cert_store =
                 RootCertStore::from_iter(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
             let mut config = RustlsClientConfig::builder()
@@ -98,7 +100,7 @@ impl<M> ClientBuilder<M> {
     #[cfg(feature = "rustls")]
     /// Use rustls connector for secured connections.
     pub fn rustls(self, config: RustlsClientConfig) -> Self {
-        use geario::net::connect::rustls::TlsConnector;
+        use geario::tls::rustls::TlsConnector;
 
         self.secure_connector(TlsConnector::new(config))
     }
