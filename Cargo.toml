@@ -1,0 +1,36 @@
+[package]
+name = "geario-http"
+version = "0.1.0"
+description = "HTTP/1.1 protocol layer for geario"
+keywords = ["http", "network", "async"]
+categories = ["network-programming", "asynchronous"]
+authors.workspace = true
+repository.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "geario_http"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[features]
+default = []
+
+[dependencies]
+geario = { workspace = true }
+foldhash = { workspace = true }
+futures-core = { workspace = true }
+http = { workspace = true }
+itoa = { workspace = true }
+log = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+serde_json = { workspace = true }
+futures-util = { workspace = true }
