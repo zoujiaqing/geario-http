@@ -53,7 +53,11 @@ struct Handler {
 unsafe impl Send for Handler {}
 unsafe impl Sync for Handler {}
 
-fn parse_headers(ptr: *const u8, len: usize) -> Vec<(Vec<u8>, Vec<u8>)> {
+/// Parse `name: value` lines straight into header types.
+///
+/// Going through owned byte pairs first would allocate twice per header and
+/// then throw both away on conversion.
+fn parse_headers(ptr: *const u8, len: usize) -> Vec<(HeaderName, HeaderValue)> {
     if ptr.is_null() || len == 0 {
         return Vec::new();
     }
@@ -62,15 +66,19 @@ fn parse_headers(ptr: *const u8, len: usize) -> Vec<(Vec<u8>, Vec<u8>)> {
         .filter_map(|line| {
             let i = line.iter().position(|b| *b == b':')?;
             let name = &line[..i];
+            if name.is_empty() {
+                return None;
+            }
             let value = line[i + 1..]
                 .iter()
                 .position(|b| *b != b' ')
                 .map_or(&line[..0], |s| &line[i + 1 + s..]);
-            if name.is_empty() {
-                None
-            } else {
-                Some((name.to_vec(), value.to_vec()))
-            }
+            // A header the host spelled wrong is dropped rather than failing
+            // the whole response: the rest of it is still correct.
+            Some((
+                HeaderName::from_bytes(name).ok()?,
+                HeaderValue::from_bytes(value).ok()?,
+            ))
         })
         .collect()
 }
@@ -188,13 +196,14 @@ pub unsafe extern "C" fn geario_http_server_start(
 async fn dispatch(handler: Handler, req: Request) -> Response {
     let (responder, rx) = responder::register();
 
-    let path = req.path().to_owned();
-    let query = req.uri().query().unwrap_or("").to_owned();
+    // req outlives the callback, so its str slices can be borrowed straight
+    // across rather than copied first.
     let headers = render_headers(&req);
+    let query = req.uri().query().unwrap_or("");
 
     let c_req = GearioHttpRequest {
         method: GearioHttpSlice::borrow(req.method().as_str().as_bytes()),
-        path: GearioHttpSlice::borrow(path.as_bytes()),
+        path: GearioHttpSlice::borrow(req.path().as_bytes()),
         query: GearioHttpSlice::borrow(query.as_bytes()),
         headers: GearioHttpSlice::borrow(&headers),
         body: GearioHttpSlice::empty(),
@@ -231,15 +240,12 @@ impl futures_core::Stream for OkStream {
 
 fn apply_head(
     status: u16,
-    headers: &[(Vec<u8>, Vec<u8>)],
+    headers: Vec<(HeaderName, HeaderValue)>,
 ) -> geario_http::ResponseBuilder {
     let status = StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
     let mut builder = Response::build(status);
     for (name, value) in headers {
-        if let (Ok(n), Ok(v)) = (HeaderName::from_bytes(name), HeaderValue::from_bytes(value))
-        {
-            builder.header(n, v);
-        }
+        builder.header(name, value);
     }
     builder
 }
@@ -250,13 +256,13 @@ fn build_response(reply: Reply) -> Response {
             status,
             headers,
             body,
-        } => apply_head(status, &headers).body(body),
+        } => apply_head(status, headers).body(body),
         Reply::Stream {
             status,
             headers,
             chunks,
         } => {
-            apply_head(status, &headers).body(BodyStream::new(OkStream(chunks)))
+            apply_head(status, headers).body(BodyStream::new(OkStream(chunks)))
         }
     }
 }

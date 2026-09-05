@@ -431,16 +431,16 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
     };
 
     if let Some(on_headers) = cbs.on_headers {
-        let pairs: Vec<(Vec<u8>, Vec<u8>)> = resp
+        // resp owns the header storage and outlives the callback, so the
+        // slices point straight at it. Copying each name and value into owned
+        // buffers first would allocate twice per header and free both on the
+        // next line.
+        let view: Vec<GearioHttpHeader> = resp
             .headers()
             .iter()
-            .map(|(n, v)| (n.as_str().as_bytes().to_vec(), v.as_bytes().to_vec()))
-            .collect();
-        let view: Vec<GearioHttpHeader> = pairs
-            .iter()
             .map(|(n, v)| GearioHttpHeader {
-                name: GearioHttpSlice::borrow(n),
-                value: GearioHttpSlice::borrow(v),
+                name: GearioHttpSlice::borrow(n.as_str().as_bytes()),
+                value: GearioHttpSlice::borrow(v.as_bytes()),
             })
             .collect();
         let action = on_headers(

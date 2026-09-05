@@ -16,19 +16,20 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use geario::bytes::Bytes;
 use geario::util::channel::{mpsc, oneshot};
+use geario_http::header::{HeaderName, HeaderValue};
 
 /// What the host eventually says in reply.
 pub(crate) enum Reply {
     /// Status, headers and the whole body at once.
     Once {
         status: u16,
-        headers: Vec<(Vec<u8>, Vec<u8>)>,
+        headers: Vec<(HeaderName, HeaderValue)>,
         body: Vec<u8>,
     },
     /// Status and headers now, body chunks as they arrive.
     Stream {
         status: u16,
-        headers: Vec<(Vec<u8>, Vec<u8>)>,
+        headers: Vec<(HeaderName, HeaderValue)>,
         chunks: mpsc::Receiver<Bytes>,
     },
 }
@@ -124,7 +125,7 @@ pub(crate) fn phase(id: u64) -> Phase {
 pub(crate) fn begin_stream(
     id: u64,
     status: u16,
-    headers: Vec<(Vec<u8>, Vec<u8>)>,
+    headers: Vec<(HeaderName, HeaderValue)>,
 ) -> Delivery {
     if id == 0 {
         return Delivery::Unknown;
