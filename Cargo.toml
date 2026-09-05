@@ -50,4 +50,5 @@ bincode = { workspace = true }
 serde_json = { workspace = true }
 geario = { workspace = true }
 rand = { workspace = true }
+env_logger = { workspace = true }
 futures-util = { workspace = true }

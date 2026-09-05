@@ -336,7 +336,7 @@ impl ResponseBuilder {
     /// Append a header to existing headers.
     ///
     /// ```rust
-    /// use ntex::http::{header, Request, Response};
+    /// use geario_http::{header, Request, Response};
     ///
     /// fn index(req: Request) -> Response {
     ///     Response::Ok()
@@ -369,7 +369,7 @@ impl ResponseBuilder {
     /// Set a header.
     ///
     /// ```rust
-    /// use ntex::http::{header, Request, Response};
+    /// use geario_http::{header, Request, Response};
     ///
     /// fn index(req: Request) -> Response {
     ///     Response::Ok()
@@ -477,7 +477,7 @@ impl ResponseBuilder {
     ///
     /// ```rust
     /// use coo_kie as cookie;
-    /// use ntex::http::{Request, Response};
+    /// use geario_http::{Request, Response};
     ///
     /// fn index(req: Request) -> Response {
     ///     Response::Ok()
@@ -509,7 +509,7 @@ impl ResponseBuilder {
     /// Remove cookie.
     ///
     /// ```rust
-    /// use ntex::http::{Request, Response, HttpMessage};
+    /// use geario_http::{Request, Response, HttpMessage};
     ///
     /// fn index(req: Request) -> Response {
     ///     let mut builder = Response::Ok();
