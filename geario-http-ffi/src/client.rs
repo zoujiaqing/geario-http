@@ -35,8 +35,12 @@ pub struct GearioHttpClientOptions {
     pub request_timeout_ms: u64,
     /// Ceiling on requests in flight at once. 0 uses the built-in default.
     pub max_inflight_requests: u32,
-    /// Reserved so the struct keeps its alignment across the u32 above.
-    pub reserved: u32,
+    /// *Additional* attempts: 0 means try once, 2 means at most three tries.
+    ///
+    /// Only idempotent methods are retried, and only when the failure happened
+    /// before a response started. Retrying a POST that may already have been
+    /// applied is a correctness bug, not a resilience feature.
+    pub max_retries: u32,
 }
 
 #[repr(C)]
@@ -82,12 +86,14 @@ pub struct GearioHttpClient {
     inflight: Arc<AtomicU32>,
     paused: Arc<AtomicU32>,
     max_inflight: u32,
+    max_retries: u32,
     next_id: Cell<u64>,
     closed: Cell<bool>,
 }
 
 struct Job {
     id: u64,
+    max_retries: u32,
     method: Vec<u8>,
     url: Vec<u8>,
     headers: Vec<(Vec<u8>, Vec<u8>)>,
@@ -163,7 +169,7 @@ pub unsafe extern "C" fn geario_http_client_options_init(
         connect_timeout_ms: 10_000,
         request_timeout_ms: 60_000,
         max_inflight_requests: DEFAULT_MAX_INFLIGHT,
-        reserved: 0,
+        max_retries: 2,
     };
     unsafe { write_prefix(opts, defaults, struct_size) };
     GEARIO_HTTP_STATUS_OK
@@ -240,19 +246,20 @@ pub unsafe extern "C" fn geario_http_client_new(
     }
 
     let full = raw_size as usize >= std::mem::size_of::<GearioHttpClientOptions>();
-    let (connect_ms, request_ms, max_inflight, flags) = if full {
+    let (connect_ms, request_ms, max_inflight, max_retries, flags) = if full {
         let o = unsafe { &*opts };
         (
             o.connect_timeout_ms,
             o.request_timeout_ms,
             o.max_inflight_requests,
+            o.max_retries,
             o.flags,
         )
     } else {
         let flags = unsafe {
             std::ptr::read_unaligned(opts.cast::<u8>().add(8).cast::<u64>())
         };
-        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, flags)
+        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags)
     };
 
     // A flag this build does not know may be the one carrying a security
@@ -328,6 +335,7 @@ pub unsafe extern "C" fn geario_http_client_new(
         inflight,
         paused,
         max_inflight,
+        max_retries,
         next_id: Cell::new(1),
         closed: Cell::new(false),
     });
@@ -353,6 +361,7 @@ fn report(cbs: &Callbacks, id: u64, kind: GearioHttpErrorKind, msg: &str) {
 async fn run_job(client: Client, job: Job, counters: Counters) {
     let Job {
         id,
+        max_retries,
         method,
         url,
         headers,
@@ -372,20 +381,50 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         Err(_) => return report(&cbs, id, GEARIO_HTTP_ERR_INVALID_URL, "bad method"),
     };
 
-    let mut req = client.request(method, url);
-    for (name, value) in &headers {
-        req = req.header(&name[..], &value[..]);
-    }
-
-    let resp = if body.is_empty() {
-        req.send().await
+    // Only idempotent methods are retried. A POST that failed after reaching
+    // the server may already have been applied; trying again would turn a
+    // resilience feature into a duplicate side effect.
+    let attempts = if is_idempotent(method.as_str().as_bytes()) {
+        max_retries.saturating_add(1)
     } else {
-        req.send_body(geario::bytes::Bytes::from(body)).await
+        1
     };
 
+    let mut last: Option<geario::error::Error<geario_http::client::error::ClientError>> = None;
+    let mut resp = None;
+
+    for _ in 0..attempts {
+        let mut req = client.request(method.clone(), url);
+        for (name, value) in &headers {
+            req = req.header(&name[..], &value[..]);
+        }
+        let sent = if body.is_empty() {
+            req.send().await
+        } else {
+            req.send_body(geario::bytes::Bytes::from(body.clone())).await
+        };
+        match sent {
+            Ok(r) => {
+                resp = Some(r);
+                break;
+            }
+            Err(e) => {
+                // Only failures that happened before a response started are
+                // safe to repeat. Anything else and the server has already
+                // seen the request.
+                let again = matches!(classify(&e), GEARIO_HTTP_ERR_CONNECT);
+                last = Some(e);
+                if !again {
+                    break;
+                }
+            }
+        }
+    }
+
     let resp = match resp {
-        Ok(r) => r,
-        Err(e) => {
+        Some(r) => r,
+        None => {
+            let e = last.expect("a failed attempt always records its error");
             let msg = format!("{e}");
             return report(&cbs, id, classify(&e), &msg);
         }
@@ -458,6 +497,20 @@ impl Drop for InflightGuard {
     fn drop(&mut self) {
         self.0.fetch_sub(1, Ordering::Relaxed);
     }
+}
+
+/// Exposed so the retry classification can be tested without a network.
+#[doc(hidden)]
+pub fn is_idempotent_for_tests(method: &[u8]) -> bool {
+    is_idempotent(method)
+}
+
+/// Methods that may be repeated without changing the outcome.
+fn is_idempotent(method: &[u8]) -> bool {
+    matches!(
+        method,
+        b"GET" | b"HEAD" | b"PUT" | b"DELETE" | b"OPTIONS" | b"TRACE"
+    )
 }
 
 fn classify(err: &geario_http::client::error::ClientError) -> GearioHttpErrorKind {
@@ -559,6 +612,7 @@ pub unsafe extern "C" fn geario_http_client_send(
 
     let job = Job {
         id,
+        max_retries: c.max_retries,
         method,
         url,
         headers,

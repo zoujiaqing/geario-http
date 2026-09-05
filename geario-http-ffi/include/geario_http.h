@@ -170,7 +170,12 @@ typedef struct {
     /** Ceiling on requests in flight. 0 uses the built-in default. Exceeding
      *  it returns GEARIO_HTTP_STATUS_THROTTLED rather than queueing. */
     uint32_t max_inflight_requests;
-    uint32_t reserved;
+    /** *Additional* attempts: 0 means try once, 2 means at most three tries.
+     *
+     *  Only idempotent methods are retried, and only when the failure happened
+     *  before a response started. Retrying a POST that may already have been
+     *  applied is a correctness bug, not a resilience feature. */
+    uint32_t max_retries;
 } GearioHttpClientOptions;
 
 typedef struct {

@@ -159,3 +159,37 @@ fn a_closed_client_refuses_new_work() {
 
     unsafe { geario_http_client_free(client) };
 }
+
+#[test]
+fn options_default_to_bounded_retries() {
+    let opts = default_options();
+    // Zero would be a valid choice, but silently is not: the default has to be
+    // something a reader can see.
+    assert_eq!(opts.max_retries, 2);
+}
+
+/// A non-idempotent method must not be repeated.
+///
+/// The port is closed, so every attempt fails at connect. A GET burns its
+/// retries and a POST does not, which is visible in how long each takes only
+/// indirectly — so this checks the classification directly instead.
+#[test]
+fn only_idempotent_methods_are_retried() {
+    for (method, retried) in [
+        (&b"GET"[..], true),
+        (&b"HEAD"[..], true),
+        (&b"PUT"[..], true),
+        (&b"DELETE"[..], true),
+        (&b"OPTIONS"[..], true),
+        (&b"TRACE"[..], true),
+        (&b"POST"[..], false),
+        (&b"PATCH"[..], false),
+    ] {
+        assert_eq!(
+            geario_http_ffi::is_idempotent_for_tests(method),
+            retried,
+            "{} classified wrongly",
+            String::from_utf8_lossy(method)
+        );
+    }
+}
