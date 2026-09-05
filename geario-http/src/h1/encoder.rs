@@ -194,12 +194,18 @@ impl MessageType for RequestHead {
     fn encode_status(&self, dst: &mut BytePages) {
         dst.put_slice(self.method.as_str().as_bytes());
         dst.put_u8(b' ');
-        dst.put_slice(
-            self.uri
-                .path_and_query()
-                .map_or("/", |u| u.as_str())
-                .as_bytes(),
-        );
+        if self.absolute_uri() {
+            // Through a proxy the request line carries the whole URI; the
+            // proxy has no other way to know where this is going.
+            dst.put_slice(self.uri.to_string().as_bytes());
+        } else {
+            dst.put_slice(
+                self.uri
+                    .path_and_query()
+                    .map_or("/", |u| u.as_str())
+                    .as_bytes(),
+            );
+        }
         dst.put_u8(b' ');
         dst.put_slice(
             // only HTTP-0.9/1.1

@@ -25,6 +25,7 @@ mod connector;
 pub mod error;
 mod h1proto;
 mod pool;
+pub mod proxy;
 mod request;
 mod response;
 mod sender;

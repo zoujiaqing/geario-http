@@ -31,6 +31,9 @@ bitflags! {
         const UPGRADE     = 0b0000_0100;
         const EXPECT      = 0b0000_1000;
         const NO_CHUNKING = 0b0001_0000;
+        /// Write the request line in absolute-form. Proxies need the whole
+        /// URI, not just the path.
+        const ABSOLUTE_URI = 0b0010_0000;
     }
 }
 
@@ -126,6 +129,17 @@ impl Head for RequestHead {
 }
 
 impl RequestHead {
+    #[inline]
+    /// Write the request line in absolute-form, as a proxy expects.
+    pub fn set_absolute_uri(&mut self, on: bool) {
+        self.flags.set(Flags::ABSOLUTE_URI, on);
+    }
+
+    #[inline]
+    pub fn absolute_uri(&self) -> bool {
+        self.flags.contains(Flags::ABSOLUTE_URI)
+    }
+
     /// Message extensions
     #[inline]
     pub fn extensions(&self) -> Ref<'_, Extensions> {
