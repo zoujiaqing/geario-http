@@ -91,8 +91,11 @@ mod tests {
     fn payload_debug() {
         assert!(format!("{:?}", Payload::None).contains("Payload::None"));
         assert!(
-            format!("{:?}", Payload::H1(geario::util::channel::bstream::channel().1))
-                .contains("Payload::H1")
+            format!(
+                "{:?}",
+                Payload::H1(geario::util::channel::bstream::channel().1)
+            )
+            .contains("Payload::H1")
         );
         assert!(
             format!(

@@ -1,9 +1,9 @@
 use std::cell::{Ref, RefMut};
 use std::str;
 
+use crate::types::header;
 use encoding_rs::{Encoding, UTF_8};
 use mime::Mime;
-use crate::types::header;
 
 #[cfg(feature = "cookie")]
 use coo_kie::Cookie;

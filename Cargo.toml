@@ -22,6 +22,12 @@ default = []
 cookie = ["coo-kie", "coo-kie/percent-encode"]
 # Reserved for the HTTP test server, which is not ported yet.
 test-server = []
+compress = ["flate2"]
+openssl = []
+rustls = []
+trace = []
+# Reserved for the WebSocket layer, which is not ported yet.
+ws = []
 
 [dependencies]
 geario = { workspace = true }
@@ -34,6 +40,9 @@ httparse = { workspace = true }
 encoding_rs = { workspace = true }
 mime = { workspace = true }
 percent-encoding = { workspace = true }
+base64 = { workspace = true }
+serde_urlencoded = { workspace = true }
+flate2 = { workspace = true, optional = true }
 serde_json = { workspace = true }
 coo-kie = { workspace = true, optional = true }
 ntex-httparse = { workspace = true }

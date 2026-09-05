@@ -1,8 +1,8 @@
 use std::{error::Error, marker::PhantomData, rc::Rc};
 
 use geario::io::{Filter, Io, types};
-use geario::service::{IntoServiceFactory, RequestState, pipeline::PipelineFactory};
 use geario::service::{Ctx, Service, ServiceFactory};
+use geario::service::{IntoServiceFactory, RequestState, pipeline::PipelineFactory};
 use geario::util::dyn_rc_err;
 
 use super::error::{DispatchError, ResponseError};
@@ -66,7 +66,6 @@ where
     {
         h1::H1Service::new(sf)
     }
-
 }
 
 impl<St, F, Req, Err> HttpService<St, F, Req, Err>

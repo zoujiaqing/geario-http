@@ -4,11 +4,11 @@ use crate::types::header::{HeaderName, HeaderValue};
 use crate::types::{Method, StatusCode, Uri, Version, header};
 use ntex_httparse::{self as httparse, HeaderParsed, Status};
 
-use crate::config::HttpServiceConfig;
-use crate::message::{ConnectionType, ResponseHead};
 use crate::HeaderItem;
+use crate::config::HttpServiceConfig;
 use crate::error::DecodeError;
 use crate::header::HeaderMap;
+use crate::message::{ConnectionType, ResponseHead};
 use crate::request::Request;
 use geario::bytes::{ByteString, Bytes, BytesMut};
 use geario::codec::Decoder;
@@ -824,8 +824,8 @@ impl ChunkedState {
 mod tests {
     use super::*;
     use crate::HttpMessage;
-use crate::header;
-use crate::header::SET_COOKIE;
+    use crate::header;
+    use crate::header::SET_COOKIE;
     use geario::service::cfg::SharedCfg;
 
     impl PayloadType {

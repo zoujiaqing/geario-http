@@ -4,14 +4,14 @@ use std::{error, fmt, io, io::Write, rc::Rc, string::FromUtf8Error};
 use crate::types::{StatusCode, header};
 
 // re-export for convinience
-pub use geario::util::channel::Canceled;
 pub use crate::types::error::Error as HttpError;
+pub use geario::util::channel::Canceled;
 
 use crate::body::Body;
 use crate::response::Response;
 use geario::bytes::BytesMut;
-use geario::util::future::Either;
 use geario::util::clone_io_error;
+use geario::util::future::Either;
 
 /// Error that can be converted to `Response`
 pub trait ResponseError: error::Error {

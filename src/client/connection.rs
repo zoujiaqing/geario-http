@@ -1,0 +1,93 @@
+use std::{fmt, time};
+
+use crate::body::Body;
+use crate::{Payload, ResponseHead, Version};
+use geario::error::Error;
+use geario::io::{IoBoxed, types::HttpProtocol};
+use geario::util::time::Millis;
+
+use super::{ClientRawRequest, error::ClientError, h1proto, pool::Acquired};
+
+pub(super) enum ConnectionType {
+    H1(IoBoxed),
+}
+
+impl ConnectionType {
+    pub(super) fn tag(&self) -> &'static str {
+        match &self {
+            ConnectionType::H1(io) => io.tag(),
+        }
+    }
+}
+
+impl fmt::Debug for ConnectionType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConnectionType::H1(_) => write!(f, "http/1"),
+        }
+    }
+}
+
+#[doc(hidden)]
+/// HTTP client connection
+pub struct Connection {
+    io: Option<ConnectionType>,
+    created: time::Instant,
+    pool: Option<Acquired>,
+}
+
+impl fmt::Debug for Connection {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.io {
+            Some(ConnectionType::H1(io)) => write!(f, "{}: Connection(h1)", io.tag()),
+            None => write!(f, "Connection(Empty)"),
+        }
+    }
+}
+
+impl Connection {
+    pub(super) fn new(io: ConnectionType, created: time::Instant, pool: Option<Acquired>) -> Self {
+        Self {
+            pool,
+            created,
+            io: Some(io),
+        }
+    }
+
+    pub(super) fn release(self, close: bool) {
+        if let Some(mut pool) = self.pool {
+            pool.release(
+                Self {
+                    io: self.io,
+                    created: self.created,
+                    pool: None,
+                },
+                close,
+            );
+        } else {
+            log::debug!("{self:?}: http pool is not set, dropping");
+        }
+    }
+
+    pub(super) fn into_inner(self) -> (ConnectionType, time::Instant, Option<Acquired>) {
+        (self.io.unwrap(), self.created, self.pool)
+    }
+
+    pub fn protocol(&self) -> HttpProtocol {
+        match self.io {
+            Some(ConnectionType::H1(_)) => HttpProtocol::Http1,
+            None => HttpProtocol::Unknown,
+        }
+    }
+
+    pub(super) async fn send_request(
+        mut self,
+        mut req: ClientRawRequest,
+        body: Body,
+        timeout: Millis,
+    ) -> Result<(ResponseHead, Payload), Error<ClientError>> {
+        let ConnectionType::H1(io) = self.io.take().unwrap();
+        req.head.version = Version::HTTP_11;
+        h1proto::send_request(io, req, body, self.created, timeout, self.pool).await
+    }
+}

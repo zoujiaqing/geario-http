@@ -2,18 +2,18 @@ use std::{cell::Cell, fmt};
 
 use bitflags::bitflags;
 
-use geario::codec::{Decoder, Encoder};
+use crate::Method;
+use crate::Version;
 use crate::body::BodySize;
 use crate::config::{DateService, HttpServiceConfig};
 use crate::error::{DecodeError, EncodeError};
 use crate::message::ConnectionType;
-use crate::Method;
-use crate::Version;
 use crate::request::Request;
 use crate::response::Response;
-use geario::service::cfg::Cfg;
 use geario::bytes::BytePages;
 use geario::bytes::BytesMut;
+use geario::codec::{Decoder, Encoder};
+use geario::service::cfg::Cfg;
 
 use super::{Message, decoder, decoder::PayloadType, encoder};
 
@@ -198,10 +198,10 @@ impl Encoder for Codec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::HttpMessage;
+    use crate::h1::PayloadItem;
+    use geario::bytes::Bytes;
     use geario::service::cfg::SharedCfg;
-use crate::HttpMessage;
-use crate::h1::PayloadItem;
-use geario::bytes::Bytes;
 
     #[test]
     fn test_http_request_chunked_payload_and_next_message() {
@@ -215,7 +215,9 @@ use geario::bytes::Bytes;
              transfer-encoding: chunked\r\n\r\n",
         );
         let (req, pl) = codec.decode(&mut buf).unwrap().unwrap();
-        let PayloadType::Payload(pl) = pl else { panic!() };
+        let PayloadType::Payload(pl) = pl else {
+            panic!()
+        };
 
         assert_eq!(req.method(), Method::GET);
         assert!(req.chunked().unwrap());

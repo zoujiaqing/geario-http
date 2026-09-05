@@ -6,15 +6,15 @@
 )]
 use std::{cell::Cell, cmp, io::Write, marker::PhantomData, mem, ptr, slice};
 
-use crate::config::DateService;
-use crate::error::EncodeError;
-use crate::header::{CONNECTION, CONTENT_LENGTH, DATE, TRANSFER_ENCODING, Value};
-use crate::message::{ConnectionType, RequestHead};
 use crate::HeaderMap;
 use crate::Response;
 use crate::StatusCode;
 use crate::Version;
 use crate::body::BodySize;
+use crate::config::DateService;
+use crate::error::EncodeError;
+use crate::header::{CONNECTION, CONTENT_LENGTH, DATE, TRANSFER_ENCODING, Value};
+use crate::message::{ConnectionType, RequestHead};
 use geario::bytes::BufMut;
 use geario::bytes::BytePages;
 use geario::bytes::Bytes;

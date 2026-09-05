@@ -5,13 +5,13 @@ use std::{error, future, io, mem, pin::Pin, rc::Rc};
 use geario::io::{Decoded, Filter, Io, IoStatusUpdate, RecvError};
 use geario::service::pipeline::{Pipeline, PipelineCall};
 use geario::util::channel::bstream;
-use geario::util::time::Seconds;
 use geario::util::future::Either;
+use geario::util::time::Seconds;
 
 use crate::body::{BodySize, MessageBody, ResponseBody};
+use crate::config::DispatcherConfig;
 use crate::error::{PayloadError, ResponseError};
 use crate::message::CurrentIo;
-use crate::config::DispatcherConfig;
 use crate::request::Request;
 use crate::response::Response;
 
@@ -78,7 +78,7 @@ where
     Err: ResponseError + 'static,
 {
     /// Construct new `Dispatcher` instance with outgoing messages stream.
-    pub(in crate) fn new(
+    pub(crate) fn new(
         id: usize,
         io: Io<F>,
         service: Pipeline<Request, Response<B>, Err>,
@@ -768,21 +768,21 @@ mod tests {
     use rand::Rng;
 
     use super::*;
-    use crate::h1::client_codec::ClientCodec;
+    use crate::ResponseHead;
+    use crate::StatusCode;
+    use crate::body;
+    use crate::client::ClientCodec;
     use crate::config::HttpServiceConfig;
     use crate::h1::{DefaultControlService, control::Reason};
-    use crate::ResponseHead;
-use crate::StatusCode;
-use crate::body;
+    use geario::bytes::{Bytes, BytesMut};
+    use geario::codec::Decoder;
+    use geario::io::testing::IoTest;
     use geario::io::{self as nio, Base};
     use geario::service::{IntoService, Service, cfg::SharedCfg, fn_service};
-    use geario::bytes::{Bytes, BytesMut};
-use geario::util::future::{lazy, stream_recv};
-use geario::util::dyn_rc_err;
-    use geario::codec::Decoder;
-use geario::io::testing::IoTest;
-use geario::util::time::Millis;
-use geario::util::time::sleep;
+    use geario::util::dyn_rc_err;
+    use geario::util::future::{lazy, stream_recv};
+    use geario::util::time::Millis;
+    use geario::util::time::sleep;
 
     const BUFFER_SIZE: usize = 32_768;
 

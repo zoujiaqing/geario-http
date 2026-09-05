@@ -1,11 +1,11 @@
 use std::{cell::Ref, cell::RefMut, fmt, mem, net};
 
-use crate::header::{self, HeaderMap};
-use crate::httpmessage::HttpMessage;
-use crate::message::{Message, RequestHead};
 use crate::Method;
 use crate::Uri;
 use crate::Version;
+use crate::header::{self, HeaderMap};
+use crate::httpmessage::HttpMessage;
+use crate::message::{Message, RequestHead};
 use crate::payload::Payload;
 use geario::io::IoRef;
 use geario::io::types;

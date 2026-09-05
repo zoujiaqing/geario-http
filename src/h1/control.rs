@@ -1,11 +1,11 @@
 use std::{fmt, io, rc::Rc};
 
-use crate::message::CurrentIo;
 use crate::Request;
 use crate::Response;
 use crate::ResponseError;
 use crate::body::Body;
 use crate::h1::Codec;
+use crate::message::CurrentIo;
 use geario::io::{Filter, Io, IoBoxed, IoRef};
 
 pub enum Control<F, Err> {

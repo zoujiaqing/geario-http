@@ -1,20 +1,15 @@
-// Ported whole so it stays a faithful counterpart to the server codec; the
-// dispatcher tests only drive part of it today.
-#![allow(dead_code)]
-
 use std::{cell::Cell, cell::RefCell};
 
 use bitflags::bitflags;
 
-use geario::codec::{Decoder, Encoder};
+use super::ClientRawRequest;
 use crate::HttpServiceConfig;
 use crate::error::{DecodeError, EncodeError, PayloadError};
-use crate::h1::{
-    Message, MessageType, PayloadDecoder, PayloadItem, PayloadType, decoder, encoder,
-};
+use crate::h1::{Message, MessageType, PayloadDecoder, PayloadItem, PayloadType, decoder, encoder};
 use crate::{ConnectionType, Method, RequestHead, ResponseHead, Version};
-use geario::service::cfg::Cfg;
 use geario::bytes::{BytePages, Bytes, BytesMut};
+use geario::codec::{Decoder, Encoder};
+use geario::service::cfg::Cfg;
 
 bitflags! {
     #[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -217,11 +212,4 @@ impl Encoder for ClientCodec {
         }
         Ok(())
     }
-}
-
-/// The raw shape a client request takes on the wire.
-pub(crate) struct ClientRawRequest {
-    pub(crate) head: crate::message::Message<RequestHead>,
-    pub(crate) headers: Option<crate::HeaderMap>,
-    pub(crate) size: crate::body::BodySize,
 }

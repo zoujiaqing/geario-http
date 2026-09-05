@@ -1,12 +1,12 @@
 use std::{cell::Cell, cell::RefCell, rc::Rc, time};
 
-use geario::io::{IoRef, cfg::FrameReadRate};
-use geario::service::cfg::{CfgContext, Configuration};
-use geario::util::time::{Millis, Seconds, sleep};
-use geario::util::channel::oneshot;
 use geario::bytes::BytePages;
 use geario::bytes::BytesMut;
+use geario::io::{IoRef, cfg::FrameReadRate};
+use geario::service::cfg::{CfgContext, Configuration};
 use geario::util::HashSet;
+use geario::util::channel::oneshot;
+use geario::util::time::{Millis, Seconds, sleep};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 /// Server keep-alive setting
@@ -86,7 +86,11 @@ impl HttpServiceConfig {
             KeepAlive::Os => (Seconds::ZERO, true),
             KeepAlive::Disabled => (Seconds::ZERO, false),
         };
-        let keep_alive = if ka_enabled { keep_alive } else { Seconds::ZERO };
+        let keep_alive = if ka_enabled {
+            keep_alive
+        } else {
+            Seconds::ZERO
+        };
 
         HttpServiceConfig {
             keep_alive,
@@ -138,7 +142,11 @@ impl HttpServiceConfig {
             KeepAlive::Os => (Seconds::ZERO, true),
             KeepAlive::Disabled => (Seconds::ZERO, false),
         };
-        let keep_alive = if ka_enabled { keep_alive } else { Seconds::ZERO };
+        let keep_alive = if ka_enabled {
+            keep_alive
+        } else {
+            Seconds::ZERO
+        };
 
         self.keep_alive = keep_alive;
         self.ka_enabled = ka_enabled;

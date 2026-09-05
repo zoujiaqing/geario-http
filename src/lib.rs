@@ -14,6 +14,7 @@ mod request;
 mod response;
 mod service;
 
+pub mod client;
 pub mod error;
 pub mod h1;
 pub mod types;

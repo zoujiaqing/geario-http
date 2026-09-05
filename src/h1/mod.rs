@@ -1,10 +1,6 @@
 //! HTTP/1 implementation
 use std::rc::Rc;
 
-// Only the dispatcher tests drive a client today; this becomes a normal
-// module once geario-http grows a client.
-#[cfg(test)]
-mod client_codec;
 mod codec;
 pub(crate) mod decoder;
 mod default;
@@ -21,8 +17,8 @@ pub use self::default::DefaultControlService;
 pub use self::service::H1Service;
 
 pub(super) use self::service::handle_io;
-use geario::util::channel::bstream::Receiver;
 use geario::bytes::Bytes;
+use geario::util::channel::bstream::Receiver;
 
 pub type Payload = Receiver<super::error::PayloadError>;
 
@@ -89,4 +85,3 @@ impl super::ResponseError for ProtocolError {
         }
     }
 }
-

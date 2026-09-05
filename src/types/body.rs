@@ -590,7 +590,11 @@ mod tests {
 
     impl Body {
         pub(crate) fn get_ref(&self) -> &[u8] {
-            if let Body::Bytes(bin) = self { bin } else { panic!() }
+            if let Body::Bytes(bin) = self {
+                bin
+            } else {
+                panic!()
+            }
         }
     }
 

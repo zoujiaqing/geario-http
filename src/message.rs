@@ -2,13 +2,13 @@ use std::{cell::Ref, cell::RefCell, cell::RefMut, fmt, net, rc::Rc};
 
 use bitflags::bitflags;
 
-use crate::header::HeaderMap;
 use crate::HeaderItem;
 use crate::Method;
 use crate::StatusCode;
 use crate::Uri;
 use crate::Version;
 use crate::h1::Codec;
+use crate::header::HeaderMap;
 use geario::io::{IoBoxed, IoRef, types};
 use geario::util::services::Extensions;
 
