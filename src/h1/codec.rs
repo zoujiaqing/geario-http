@@ -89,6 +89,7 @@ impl Codec {
         }
     }
 
+    #[cfg_attr(not(feature = "server"), allow(dead_code))]
     pub(super) fn is_reading_hdrs(&self) -> bool {
         self.decoder.is_reading_hdrs()
     }
@@ -117,6 +118,7 @@ impl Codec {
         self.flags.set(flags);
     }
 
+    #[cfg_attr(not(feature = "server"), allow(dead_code))]
     pub(super) fn reset_upgrade(&self) {
         let mut flags = self.flags.get();
         flags.remove(Flags::STREAM);

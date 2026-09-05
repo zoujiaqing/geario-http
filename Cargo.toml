@@ -18,15 +18,27 @@ path = "src/lib.rs"
 workspace = true
 
 [features]
-default = []
-cookie = ["coo-kie", "coo-kie/percent-encode"]
-# Reserved for the HTTP test server, which is not ported yet.
-test-server = []
+# A server out of the box; an FFI build can turn this off and name what it needs.
+default = ["http1", "server"]
+# Everything that is implemented today.
+full = ["http1", "client", "server"]
+
+# Protocol versions
+http1 = []
+
+# Roles
+client = ["http1"]
+server = ["http1"]
+
+# Extras
 compress = ["flate2"]
+cookie = ["coo-kie", "coo-kie/percent-encode"]
+trace = []
+
+# Reserved: no implementation yet.
 openssl = []
 rustls = []
-trace = []
-# Reserved for the WebSocket layer, which is not ported yet.
+test-server = []
 ws = []
 
 [dependencies]

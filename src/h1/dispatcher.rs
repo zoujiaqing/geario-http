@@ -760,7 +760,9 @@ where
     }
 }
 
-#[cfg(test)]
+// The dispatcher tests drive the server through the client codec, so they
+// need both roles compiled in.
+#[cfg(all(test, feature = "client"))]
 mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::{cell::Cell, future::Future, future::poll_fn, sync::Arc};

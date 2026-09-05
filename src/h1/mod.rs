@@ -3,19 +3,27 @@ use std::rc::Rc;
 
 mod codec;
 pub(crate) mod decoder;
+#[cfg(feature = "server")]
 mod default;
+#[cfg(feature = "server")]
 mod dispatcher;
 pub(crate) mod encoder;
+#[cfg(feature = "server")]
 mod service;
 
+#[cfg(feature = "server")]
 pub mod control;
 
 pub use self::codec::Codec;
+#[cfg(feature = "server")]
 pub use self::control::{Control, ControlAck};
 pub use self::decoder::{PayloadDecoder, PayloadItem, PayloadType};
+#[cfg(feature = "server")]
 pub use self::default::DefaultControlService;
+#[cfg(feature = "server")]
 pub use self::service::H1Service;
 
+#[cfg(feature = "server")]
 pub(super) use self::service::handle_io;
 use geario::bytes::Bytes;
 use geario::util::channel::bstream::Receiver;

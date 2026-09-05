@@ -58,6 +58,7 @@ impl<T: MessageType> MessageDecoder<T> {
         }
     }
 
+    #[cfg_attr(not(feature = "server"), allow(dead_code))]
     pub(super) fn is_reading_hdrs(&self) -> bool {
         self.hdrs.get()
     }

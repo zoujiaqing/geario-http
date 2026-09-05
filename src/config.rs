@@ -261,8 +261,10 @@ bitflags::bitflags! {
 }
 
 #[derive(Clone)]
+#[cfg_attr(not(feature = "server"), allow(dead_code))]
 pub(super) struct DispatcherConfig(Rc<DispatcherConfigInner>);
 
+#[cfg_attr(not(feature = "server"), allow(dead_code))]
 struct DispatcherConfigInner {
     flags: Cell<Flags>,
     idx: Cell<usize>,
@@ -285,6 +287,7 @@ impl Default for DispatcherConfig {
     }
 }
 
+#[cfg_attr(not(feature = "server"), allow(dead_code))]
 impl DispatcherConfig {
     /// Get connection id
     pub(super) fn next_id(&self) -> usize {

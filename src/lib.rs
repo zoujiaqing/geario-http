@@ -12,8 +12,10 @@ mod message;
 mod payload;
 mod request;
 mod response;
+#[cfg(feature = "server")]
 mod service;
 
+#[cfg(feature = "client")]
 pub mod client;
 pub mod error;
 pub mod h1;
@@ -26,6 +28,7 @@ pub use self::message::{ConnectionType, RequestHead, ResponseHead};
 pub use self::payload::{Payload, PayloadStream};
 pub use self::request::Request;
 pub use self::response::{Response, ResponseBuilder};
+#[cfg(feature = "server")]
 pub use self::service::HttpService;
 pub use geario::io::types::HttpProtocol;
 

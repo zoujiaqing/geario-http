@@ -44,6 +44,7 @@ pub(crate) trait Head: Default + 'static + fmt::Debug {
 
 #[derive(Clone, Debug)]
 pub(crate) enum CurrentIo {
+    #[cfg_attr(not(feature = "server"), allow(dead_code))]
     Ref(IoRef),
     Io(Rc<dyn IoAccess>),
     None,
@@ -56,6 +57,7 @@ pub(crate) trait IoAccess: fmt::Debug {
 }
 
 impl CurrentIo {
+    #[cfg_attr(not(feature = "server"), allow(dead_code))]
     pub(crate) fn new(io: Rc<dyn IoAccess>) -> Self {
         CurrentIo::Io(io)
     }
