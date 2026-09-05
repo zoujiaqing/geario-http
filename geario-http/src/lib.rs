@@ -5,6 +5,8 @@
 extern crate self as geario_http;
 
 mod config;
+#[cfg(feature = "compress")]
+pub mod encoding;
 pub(crate) mod helpers;
 mod httpcodes;
 mod httpmessage;

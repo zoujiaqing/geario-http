@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      # geario is a sibling path dependency.
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
+      - uses: dtolnay/rust-toolchain@stable
+
+      # Every feature combination has to build. A feature that only compiles
+      # when another happens to be on is a trap for whoever turns it on next.
+      - name: check feature combinations
+        working-directory: geario-http
+        run: |
+          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie"; do
+            echo "--- features: ${f:-default} ---"
+            if [ -z "$f" ]; then
+              cargo check -p geario-http
+            else
+              cargo check -p geario-http --no-default-features --features "$f"
+            fi
+          done
+
+      - name: test
+        working-directory: geario-http
+        run: cargo test --features full
+
+      - name: ffi C examples
+        working-directory: geario-http
+        run: |
+          cargo build -p geario-http-ffi --release
+          make -C geario-http-ffi/examples
+          ./geario-http-ffi/examples/version
+          ./geario-http-ffi/examples/roundtrip
