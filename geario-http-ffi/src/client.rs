@@ -7,6 +7,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc;
 
+use futures_core::Stream;
 use geario_http::client::Client;
 
 use crate::abi::*;
@@ -456,35 +457,42 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         }
     }
 
-    // The body arrives whole today. Handing it to on_chunk in one call keeps
-    // the callback contract honest rather than faking a chunk sequence.
-    let bytes = match resp.body().await {
-        Ok(b) => b,
-        Err(e) => {
-            let msg = format!("{e}");
-            return report(&cbs, id, GEARIO_HTTP_ERR_IO, &msg);
-        }
-    };
-
-    if let Some(on_chunk) = cbs.on_chunk {
-        if !bytes.is_empty() {
-            let action = on_chunk(cbs.user_data, id, bytes.as_ptr(), bytes.len());
-            match action {
-                GEARIO_HTTP_CHUNK_CANCEL => {
-                    return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at chunk");
-                }
-                GEARIO_HTTP_CHUNK_PAUSE => {
-                    counters.paused.fetch_add(1, Ordering::Relaxed);
-                    let (tx, rx) = geario::util::channel::oneshot::channel();
-                    PAUSED.with(|p| p.borrow_mut().insert(id, tx));
-                    let _ = rx.await;
-                    counters.paused.fetch_sub(1, Ordering::Relaxed);
-                    if CANCELLED.with(|c| c.borrow_mut().remove(&id)).is_some() {
-                        return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled");
-                    }
-                }
-                _ => {}
+    // Deliver the body chunk by chunk. Buffering it whole would be faster for
+    // small replies, but it puts no ceiling on memory and makes an endless
+    // stream impossible, which is what this callback shape exists for.
+    let mut resp = std::pin::pin!(resp);
+    loop {
+        let next = std::future::poll_fn(|cx| resp.as_mut().poll_next(cx)).await;
+        let chunk = match next {
+            None => break,
+            Some(Ok(c)) => c,
+            Some(Err(e)) => {
+                let msg = format!("{e}");
+                return report(&cbs, id, GEARIO_HTTP_ERR_IO, &msg);
             }
+        };
+        if chunk.is_empty() {
+            continue;
+        }
+        let Some(on_chunk) = cbs.on_chunk else { continue };
+
+        match on_chunk(cbs.user_data, id, chunk.as_ptr(), chunk.len()) {
+            GEARIO_HTTP_CHUNK_CANCEL => {
+                return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at chunk");
+            }
+            GEARIO_HTTP_CHUNK_PAUSE => {
+                // Nothing is read from the socket while parked, so this is
+                // real backpressure rather than a pause on notifications.
+                counters.paused.fetch_add(1, Ordering::Relaxed);
+                let (tx, rx) = geario::util::channel::oneshot::channel();
+                PAUSED.with(|p| p.borrow_mut().insert(id, tx));
+                let _ = rx.await;
+                counters.paused.fetch_sub(1, Ordering::Relaxed);
+                if CANCELLED.with(|c| c.borrow_mut().remove(&id)).is_some() {
+                    return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled");
+                }
+            }
+            _ => {}
         }
     }
 
