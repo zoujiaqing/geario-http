@@ -53,10 +53,6 @@ hyper-server = ["hyper-rt", "hyper/server"]
 hyper-client = ["hyper-rt", "hyper/client"]
 hyper-full = ["hyper-http1", "hyper-http2", "hyper-server", "hyper-client"]
 
-# Reserved: no implementation yet.
-openssl = []
-test-server = []
-
 [dependencies]
 geario = { workspace = true }
 rcgen = { workspace = true }

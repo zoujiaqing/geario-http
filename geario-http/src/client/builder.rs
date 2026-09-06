@@ -11,9 +11,6 @@ use super::pool::ConnectionPool;
 use super::service::{ServiceRequest, ServiceResponse};
 use super::{Client, ClientConfig, Connect, ConnectorPipeline, sender::Sender};
 
-#[cfg(feature = "openssl")]
-use tls_openssl::ssl::SslConnector as OpensslConnector;
-
 #[cfg(feature = "rustls")]
 use tls_rustls::ClientConfig as RustlsClientConfig;
 
@@ -54,19 +51,7 @@ impl ClientBuilder<Identity> {
             middleware: Identity,
         };
 
-        #[cfg(feature = "openssl")]
-        {
-            use tls_openssl::ssl::SslMethod;
-
-            let mut ssl = OpensslConnector::builder(SslMethod::tls()).unwrap();
-            let _ = ssl
-                .set_alpn_protos(b"\x02h2\x08http/1.1")
-                .map_err(|e| log::error!("Cannot set ALPN protocol: {e:?}"));
-            ssl.set_verify(tls_openssl::ssl::SslVerifyMode::NONE);
-
-            builder.openssl(ssl.build())
-        }
-        #[cfg(all(not(feature = "openssl"), feature = "rustls"))]
+        #[cfg(feature = "rustls")]
         {
             use tls_rustls::RootCertStore;
 
@@ -81,7 +66,7 @@ impl ClientBuilder<Identity> {
             config.alpn_protocols = protos;
             builder.rustls(config)
         }
-        #[cfg(not(any(feature = "openssl", feature = "rustls")))]
+        #[cfg(not(feature = "rustls"))]
         {
             builder
         }
@@ -89,15 +74,6 @@ impl ClientBuilder<Identity> {
 }
 
 impl<M> ClientBuilder<M> {
-    #[must_use]
-    #[cfg(feature = "openssl")]
-    /// Use openssl connector for secured connections.
-    pub fn openssl(self, config: OpensslConnector) -> Self {
-        use geario::net::connect::openssl::SslConnector;
-
-        self.secure_connector(SslConnector::new(config))
-    }
-
     #[must_use]
     #[cfg(feature = "rustls")]
     /// Use rustls connector for secured connections.

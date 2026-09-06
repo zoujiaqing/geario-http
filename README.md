@@ -49,7 +49,8 @@ becomes a version dependency once geario stabilises.
 A server-only build is about 46% smaller than `full`, which matters when the
 library is linked into an FFI target.
 
-Reserved but not implemented: `http2`, `openssl`, `test-server`.
+HTTP/2 is available through the hyper runtime layer: `hyper-http2`, or
+`hyper-full` for every version and role at once.
 
 An HTTP proxy is supported for plaintext targets. TLS through a proxy needs
 a CONNECT tunnel, which is not implemented, and is refused rather than sent

@@ -45,7 +45,7 @@ C ABI 在这里不是补丁。Kotlin/Native 是一等消费者，所以 `geario-
 
 只开 server 的构建比 `full` 小约 46%，这在把库链进 FFI 目标时是实际收益。
 
-已预留但尚未实现：`http2`、`openssl`、`test-server`。
+HTTP/2 通过 hyper 运行时层提供：`hyper-http2`，或用 `hyper-full` 一次性开启全部版本与角色。
 
 明文目标支持 HTTP 代理。TLS 走代理需要 CONNECT 隧道，尚未实现，
 会明确拒绝而不是绕过代理直连。

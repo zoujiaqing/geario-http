@@ -1,10 +1,6 @@
 //! Websockets client
 use std::{fmt, marker};
 
-#[cfg(feature = "openssl")]
-use geario::net::connect::openssl;
-#[cfg(feature = "openssl")]
-use tls_openssl::ssl::SslConnector;
 
 #[cfg(feature = "rustls")]
 use geario::tls::rustls::{TlsClientFilter, TlsConnector};
@@ -104,11 +100,6 @@ impl<F> WsClient<F> {
         }
     }
 
-    #[cfg(feature = "openssl")]
-    /// Use openssl connector.
-    pub fn openssl(self, config: SslConnector) -> WsClient<Layer<openssl::SslFilter>> {
-        self.connector(openssl::SslConnector::new(config))
-    }
 
     #[cfg(feature = "rustls")]
     /// Use rustls connector.

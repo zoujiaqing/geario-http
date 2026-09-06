@@ -3,8 +3,6 @@ use std::{error::Error as StdError, io, ops::Deref, rc::Rc};
 
 use serde_json::error::Error as JsonError;
 
-#[cfg(feature = "openssl")]
-use tls_openssl::ssl::{Error as SslError, HandshakeError};
 
 use crate::error::{DecodeError, EncodeError, HttpError, PayloadError};
 use geario::error::ErrorDiagnostic;
@@ -98,16 +96,6 @@ pub enum ConnectError {
     #[error("SSL is not supported")]
     SslIsNotSupported,
 
-    /// SSL error
-    #[cfg(feature = "openssl")]
-    #[error("{0}")]
-    SslError(#[source] Rc<SslError>),
-
-    /// SSL Handshake error
-    #[cfg(feature = "openssl")]
-    #[error("{0}")]
-    SslHandshakeError(#[source] Rc<dyn StdError>),
-
     /// Failed to resolve the hostname
     #[error("Failed resolving hostname: {0}")]
     Resolver(
@@ -137,10 +125,6 @@ impl ErrorDiagnostic for ConnectError {
     fn signature(&self) -> &'static str {
         match self {
             ConnectError::SslIsNotSupported => "geario-client-connect-SslIsNotSupported",
-            #[cfg(feature = "openssl")]
-            ConnectError::SslError(_) => "geario-client-connect-SslError",
-            #[cfg(feature = "openssl")]
-            ConnectError::SslHandshakeError(_) => "geario-client-connect-SslHandshakeError",
             ConnectError::Resolver(..) => "geario-client-connect-Resolver",
             ConnectError::NoRecords => "geario-client-connect-NoRecords",
             ConnectError::Timeout => "geario-client-connect-Timeout",
@@ -154,10 +138,6 @@ impl Clone for ConnectError {
     fn clone(&self) -> Self {
         match self {
             ConnectError::SslIsNotSupported => ConnectError::SslIsNotSupported,
-            #[cfg(feature = "openssl")]
-            ConnectError::SslError(e) => ConnectError::SslError(e.clone()),
-            #[cfg(feature = "openssl")]
-            ConnectError::SslHandshakeError(e) => ConnectError::SslHandshakeError(e.clone()),
             ConnectError::Resolver(e) => ConnectError::Resolver(clone_io_error(e)),
             ConnectError::NoRecords => ConnectError::NoRecords,
             ConnectError::Timeout => ConnectError::Timeout,
@@ -173,12 +153,6 @@ impl Clone for ConnectError {
     }
 }
 
-#[cfg(feature = "openssl")]
-impl From<SslError> for ConnectError {
-    fn from(err: SslError) -> Self {
-        ConnectError::SslError(Rc::new(err))
-    }
-}
 
 impl From<geario::net::connect::ConnectError> for ConnectError {
     fn from(err: geario::net::connect::ConnectError) -> ConnectError {
@@ -192,12 +166,6 @@ impl From<geario::net::connect::ConnectError> for ConnectError {
     }
 }
 
-#[cfg(feature = "openssl")]
-impl<T: StdError + 'static> From<HandshakeError<T>> for ConnectError {
-    fn from(err: HandshakeError<T>) -> ConnectError {
-        ConnectError::SslHandshakeError(Rc::new(err))
-    }
-}
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 pub enum InvalidUrl {

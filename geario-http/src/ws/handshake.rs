@@ -88,118 +88,92 @@ pub fn handshake_response(req: &RequestHead) -> ResponseBuilder {
         .take()
 }
 
-// These build requests with TestRequest, which lives in the HTTP test
-// server. That module is not ported.
-#[cfg(all(test, feature = "test-server"))]
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::error::ResponseError;
-use crate::test::TestRequest;
+    use crate::request::Request;
+
+    /// A request head with the given method and headers. These tests used to
+    /// go through a `TestRequest` builder in a test server that was never
+    /// ported, so none of them compiled.
+    fn head(method: Method, headers: &[(header::HeaderName, &'static str)]) -> Request {
+        let mut req = Request::default();
+        req.head_mut().method = method;
+        for (name, value) in headers {
+            req.headers_mut()
+                .insert(name.clone(), header::HeaderValue::from_static(value));
+            // `upgrade()` reads the connection type the parser worked out,
+            // not the header map, so putting the header there is not enough
+            // to make the request an upgrade.
+            if name == header::CONNECTION && value.eq_ignore_ascii_case("upgrade") {
+                req.head_mut()
+                    .set_connection_type(crate::message::ConnectionType::Upgrade);
+            }
+        }
+        req
+    }
+
+    fn get(headers: &[(header::HeaderName, &'static str)]) -> Request {
+        head(Method::GET, headers)
+    }
 
     #[test]
-    fn test_handshake() {
-        let req = TestRequest::default().method(Method::POST).finish();
-        assert_eq!(
-            HandshakeError::GetMethodRequired,
-            verify_handshake(req.head()).err().unwrap()
-        );
+    fn a_handshake_is_rejected_until_every_part_is_present() {
+        // Each case adds the part the previous one was missing, so the
+        // sequence walks the whole validation rather than one branch of it.
+        let cases: Vec<(Request, HandshakeError)> = vec![
+            (
+                head(Method::POST, &[]),
+                HandshakeError::GetMethodRequired,
+            ),
+            (get(&[]), HandshakeError::NoWebsocketUpgrade),
+            (
+                get(&[(header::UPGRADE, "test")]),
+                HandshakeError::NoWebsocketUpgrade,
+            ),
+            (
+                get(&[(header::UPGRADE, "websocket")]),
+                HandshakeError::NoConnectionUpgrade,
+            ),
+            (
+                get(&[
+                    (header::UPGRADE, "websocket"),
+                    (header::CONNECTION, "upgrade"),
+                ]),
+                HandshakeError::NoVersionHeader,
+            ),
+            (
+                get(&[
+                    (header::UPGRADE, "websocket"),
+                    (header::CONNECTION, "upgrade"),
+                    (header::SEC_WEBSOCKET_VERSION, "5"),
+                ]),
+                HandshakeError::UnsupportedVersion,
+            ),
+            (
+                get(&[
+                    (header::UPGRADE, "websocket"),
+                    (header::CONNECTION, "upgrade"),
+                    (header::SEC_WEBSOCKET_VERSION, "13"),
+                ]),
+                HandshakeError::BadWebsocketKey,
+            ),
+        ];
 
-        let req = TestRequest::default().finish();
-        assert_eq!(
-            HandshakeError::NoWebsocketUpgrade,
-            verify_handshake(req.head()).err().unwrap()
-        );
+        for (req, expected) in cases {
+            assert_eq!(expected, verify_handshake(req.head()).err().unwrap());
+        }
+    }
 
-        let req = TestRequest::default()
-            .header(header::UPGRADE, header::HeaderValue::from_static("test"))
-            .finish();
-        assert_eq!(
-            HandshakeError::NoWebsocketUpgrade,
-            verify_handshake(req.head()).err().unwrap()
-        );
-
-        let req = TestRequest::default()
-            .header(
-                header::UPGRADE,
-                header::HeaderValue::from_static("websocket"),
-            )
-            .finish();
-        assert_eq!(
-            HandshakeError::NoConnectionUpgrade,
-            verify_handshake(req.head()).err().unwrap()
-        );
-
-        let req = TestRequest::default()
-            .header(
-                header::UPGRADE,
-                header::HeaderValue::from_static("websocket"),
-            )
-            .header(
-                header::CONNECTION,
-                header::HeaderValue::from_static("upgrade"),
-            )
-            .finish();
-        assert_eq!(
-            HandshakeError::NoVersionHeader,
-            verify_handshake(req.head()).err().unwrap()
-        );
-
-        let req = TestRequest::default()
-            .header(
-                header::UPGRADE,
-                header::HeaderValue::from_static("websocket"),
-            )
-            .header(
-                header::CONNECTION,
-                header::HeaderValue::from_static("upgrade"),
-            )
-            .header(
-                header::SEC_WEBSOCKET_VERSION,
-                header::HeaderValue::from_static("5"),
-            )
-            .finish();
-        assert_eq!(
-            HandshakeError::UnsupportedVersion,
-            verify_handshake(req.head()).err().unwrap()
-        );
-
-        let req = TestRequest::default()
-            .header(
-                header::UPGRADE,
-                header::HeaderValue::from_static("websocket"),
-            )
-            .header(
-                header::CONNECTION,
-                header::HeaderValue::from_static("upgrade"),
-            )
-            .header(
-                header::SEC_WEBSOCKET_VERSION,
-                header::HeaderValue::from_static("13"),
-            )
-            .finish();
-        assert_eq!(
-            HandshakeError::BadWebsocketKey,
-            verify_handshake(req.head()).err().unwrap()
-        );
-
-        let req = TestRequest::default()
-            .header(
-                header::UPGRADE,
-                header::HeaderValue::from_static("websocket"),
-            )
-            .header(
-                header::CONNECTION,
-                header::HeaderValue::from_static("upgrade"),
-            )
-            .header(
-                header::SEC_WEBSOCKET_VERSION,
-                header::HeaderValue::from_static("13"),
-            )
-            .header(
-                header::SEC_WEBSOCKET_KEY,
-                header::HeaderValue::from_static("13"),
-            )
-            .finish();
+    #[test]
+    fn a_complete_handshake_switches_protocols() {
+        let req = get(&[
+            (header::UPGRADE, "websocket"),
+            (header::CONNECTION, "upgrade"),
+            (header::SEC_WEBSOCKET_VERSION, "13"),
+            (header::SEC_WEBSOCKET_KEY, "13"),
+        ]);
         assert_eq!(
             StatusCode::SWITCHING_PROTOCOLS,
             handshake_response(req.head()).finish().status()
@@ -210,15 +184,15 @@ use crate::test::TestRequest;
     fn test_wserror_http_response() {
         let resp: Response = HandshakeError::GetMethodRequired.error_response();
         assert_eq!(resp.status(), StatusCode::METHOD_NOT_ALLOWED);
-        let resp: Response = HandshakeError::NoWebsocketUpgrade.error_response();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-        let resp: Response = HandshakeError::NoConnectionUpgrade.error_response();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-        let resp: Response = HandshakeError::NoVersionHeader.error_response();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-        let resp: Response = HandshakeError::UnsupportedVersion.error_response();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
-        let resp: Response = HandshakeError::BadWebsocketKey.error_response();
-        assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        for err in [
+            HandshakeError::NoWebsocketUpgrade,
+            HandshakeError::NoConnectionUpgrade,
+            HandshakeError::NoVersionHeader,
+            HandshakeError::UnsupportedVersion,
+            HandshakeError::BadWebsocketKey,
+        ] {
+            let resp: Response = err.error_response();
+            assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
+        }
     }
 }
