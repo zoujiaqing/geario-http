@@ -230,7 +230,9 @@ impl<F: Filter> Write for GearioTransport<F> {
     }
 
     fn is_write_vectored(&self) -> bool {
-        true
+        // Toggleable so an A/B run can compare the two paths in one binary,
+        // which removes build differences from the comparison.
+        !matches!(std::env::var("GEARIO_NO_VECTORED").as_deref(), Ok("1"))
     }
 
     fn poll_write_vectored(
