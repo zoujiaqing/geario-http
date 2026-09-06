@@ -193,7 +193,40 @@ pub unsafe extern "C" fn geario_http_server_start(
     }))
 }
 
-async fn dispatch(handler: Handler, req: Request) -> Response {
+/// The largest request body handed to the host.
+///
+/// The body is delivered as one slice, so it has to be held in memory, and
+/// the host cannot ask for a limit: `server_start`'s signature is fixed by
+/// the ABI. A request over the limit is answered with 413 and the handler is
+/// never called, rather than being delivered truncated.
+const MAX_BODY: usize = 16 * 1024 * 1024;
+
+/// Read the whole request body.
+///
+/// `Err` means the body was too large or the connection failed; either way
+/// the handler must not see a partial body and believe it complete.
+async fn read_body(req: &mut Request) -> Result<Vec<u8>, Response> {
+    let mut payload = req.take_payload();
+    let mut body = Vec::new();
+    while let Some(chunk) = payload.recv().await {
+        let chunk = match chunk {
+            Ok(chunk) => chunk,
+            Err(_) => return Err(Response::BadRequest().body("could not read the request body")),
+        };
+        if body.len() + chunk.len() > MAX_BODY {
+            return Err(Response::PayloadTooLarge().finish());
+        }
+        body.extend_from_slice(&chunk);
+    }
+    Ok(body)
+}
+
+async fn dispatch(handler: Handler, mut req: Request) -> Response {
+    let body = match read_body(&mut req).await {
+        Ok(body) => body,
+        Err(response) => return response,
+    };
+
     let (responder, rx) = responder::register();
 
     // req outlives the callback, so its str slices can be borrowed straight
@@ -206,7 +239,7 @@ async fn dispatch(handler: Handler, req: Request) -> Response {
         path: GearioHttpSlice::borrow(req.path().as_bytes()),
         query: GearioHttpSlice::borrow(query.as_bytes()),
         headers: GearioHttpSlice::borrow(&headers),
-        body: GearioHttpSlice::empty(),
+        body: GearioHttpSlice::borrow(&body),
         responder,
     };
 
