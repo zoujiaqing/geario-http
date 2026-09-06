@@ -193,3 +193,48 @@ fn only_idempotent_methods_are_retried() {
         );
     }
 }
+
+#[test]
+fn a_proxy_url_that_cannot_be_honoured_is_refused() {
+    // Ignoring it would connect direct, which is the one outcome the caller
+    // did not ask for.
+    for bad in [
+        &b"https://proxy.example"[..],   // TLS to the proxy is another shape
+        &b"http://user:pass@proxy.example"[..], // credentials would be dropped
+        &b"socks5://proxy.example"[..],
+        &b"not a url"[..],
+    ] {
+        let mut opts = default_options();
+        opts.proxy_url = bad.as_ptr();
+        opts.proxy_url_len = bad.len();
+        let mut out = std::ptr::null_mut();
+        assert_eq!(
+            unsafe { geario_http_client_new(&opts, &mut out) },
+            GEARIO_HTTP_STATUS_INVALID_ARG,
+            "{} was accepted",
+            String::from_utf8_lossy(bad)
+        );
+        assert!(out.is_null());
+    }
+}
+
+#[test]
+fn a_usable_proxy_url_is_accepted() {
+    let url = b"http://127.0.0.1:3128";
+    let mut opts = default_options();
+    opts.proxy_url = url.as_ptr();
+    opts.proxy_url_len = url.len();
+    let mut client = std::ptr::null_mut();
+    assert_eq!(
+        unsafe { geario_http_client_new(&opts, &mut client) },
+        GEARIO_HTTP_STATUS_OK
+    );
+    unsafe { geario_http_client_free(client) };
+}
+
+#[test]
+fn options_default_to_no_proxy() {
+    let opts = default_options();
+    assert!(opts.proxy_url.is_null());
+    assert_eq!(opts.proxy_url_len, 0);
+}

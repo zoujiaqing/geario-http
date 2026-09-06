@@ -176,6 +176,17 @@ typedef struct {
      *  before a response started. Retrying a POST that may already have been
      *  applied is a correctness bug, not a resilience feature. */
     uint32_t max_retries;
+    /** NULL or zero length means direct connections. Otherwise
+     *  `http://host[:port]`.
+     *
+     *  Plaintext targets go through it in absolute-form. TLS targets are
+     *  refused: tunnelling them needs CONNECT, which this build does not have,
+     *  and going direct instead would quietly defeat the proxy.
+     *
+     *  A proxy URL that cannot be honoured returns
+     *  GEARIO_HTTP_STATUS_INVALID_ARG rather than being ignored. */
+    const unsigned char *proxy_url;
+    size_t proxy_url_len;
 } GearioHttpClientOptions;
 
 typedef struct {

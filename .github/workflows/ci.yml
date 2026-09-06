@@ -35,7 +35,7 @@ jobs:
 
       - name: test
         working-directory: geario-http
-        run: cargo test --features full
+        run: cargo test --features full,compress
 
       - name: ffi C examples
         working-directory: geario-http

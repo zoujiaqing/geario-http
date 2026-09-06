@@ -12,11 +12,12 @@ use super::{connector::Connector, error::ClientError};
 #[derive(Debug)]
 pub struct Sender {
     connector: Connector,
+    proxy: Option<super::proxy::ProxyTarget>,
 }
 
 impl Sender {
-    pub(super) fn new(connector: Connector) -> Self {
-        Self { connector }
+    pub(super) fn new(connector: Connector, proxy: Option<super::proxy::ProxyTarget>) -> Self {
+        Self { connector, proxy }
     }
 }
 
@@ -34,7 +35,7 @@ impl Service<SharedCfg, ServiceRequest> for Sender {
         ctx: Ctx<'_, Self, SharedCfg>,
     ) -> Result<Self::Res, Self::Error> {
         let ServiceRequest {
-            head,
+            mut head,
             addr,
             body,
             headers,
@@ -43,6 +44,18 @@ impl Service<SharedCfg, ServiceRequest> for Sender {
         } = req;
 
         let uri = head.uri.clone();
+
+        if self.proxy.is_some() {
+            if super::proxy::ProxyTarget::needs_tunnel(&uri) {
+                // Falling back to a direct connection would quietly defeat
+                // whatever the proxy was there to do.
+                return Err(Error::from(ClientError::ProxyTunnelNotSupported));
+            }
+            // The connection goes to the proxy, so the request line has to
+            // carry the whole URI or the proxy has no idea where to forward.
+            head.set_absolute_uri(true);
+        }
+
         let con = ctx.call(&self.connector, Connect { uri, addr }).await?;
         let config = ctx.st().get::<ClientConfig>();
 

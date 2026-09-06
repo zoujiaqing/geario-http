@@ -26,6 +26,7 @@ pub struct ClientBuilder<M = Identity> {
     middleware: M,
     svc: ConnectorPipeline,
     secure_svc: Option<ConnectorPipeline>,
+    proxy: Option<super::proxy::ProxyTarget>,
 }
 
 impl Default for ClientBuilder<Identity> {
@@ -49,6 +50,7 @@ impl ClientBuilder<Identity> {
         let builder = ClientBuilder {
             svc,
             secure_svc: None,
+            proxy: None,
             middleware: Identity,
         };
 
@@ -103,6 +105,31 @@ impl<M> ClientBuilder<M> {
         use geario::tls::rustls::TlsConnector;
 
         self.secure_connector(TlsConnector::new(config))
+    }
+
+    #[must_use]
+    /// Send plaintext requests through an HTTP proxy.
+    ///
+    /// The connection goes to the proxy and the request line carries the whole
+    /// URI, which is how the proxy learns where it is going.
+    ///
+    /// TLS targets are **not** tunnelled yet. They are refused rather than
+    /// sent direct: quietly bypassing a configured proxy would defeat whatever
+    /// the proxy was there to do.
+    pub fn proxy(mut self, target: super::proxy::ProxyTarget) -> Self {
+        let uri: Uri = format!("http://{}", target.addr())
+            .parse()
+            .expect("a validated ProxyTarget always forms a URI");
+
+        self.svc = ConnectorPipeline::new(
+            apply_fn(TcpConnector::new(), async move |_msg: Connect, svc| {
+                svc.call(TcpConnect::new(uri.clone())).await
+            })
+            .map(IoBoxed::from)
+            .map_err(|e| e.map(ConnectError::from)),
+        );
+        self.proxy = Some(target);
+        self
     }
 
     #[must_use]
@@ -166,6 +193,7 @@ impl<M> ClientBuilder<M> {
             middleware: Stack::new(mw, self.middleware),
             svc: self.svc,
             secure_svc: self.secure_svc,
+            proxy: self.proxy,
         }
     }
 
@@ -178,6 +206,7 @@ impl<M> ClientBuilder<M> {
     {
         let cfg = cfg.into();
         let config = cfg.get::<ClientConfig>();
+        let proxy = self.proxy;
 
         let connector = Connector {
             tcp_pool: ConnectionPool::new(self.svc, config.clone()),
@@ -185,7 +214,7 @@ impl<M> ClientBuilder<M> {
                 .secure_svc
                 .map(|svc| ConnectionPool::new(svc, config.clone())),
         };
-        let svc = self.middleware.create(Sender::new(connector), &cfg);
+        let svc = self.middleware.create(Sender::new(connector, proxy), &cfg);
 
         Client::with_service(config, Pipeline::with(cfg, svc))
     }

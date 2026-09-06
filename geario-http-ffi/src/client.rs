@@ -9,6 +9,7 @@ use std::sync::mpsc;
 
 use futures_core::Stream;
 use geario_http::client::Client;
+use geario_http::client::proxy::ProxyTarget;
 
 use crate::abi::*;
 use crate::slice::{GearioHttpError, GearioHttpHeader, GearioHttpSlice};
@@ -42,6 +43,14 @@ pub struct GearioHttpClientOptions {
     /// before a response started. Retrying a POST that may already have been
     /// applied is a correctness bug, not a resilience feature.
     pub max_retries: u32,
+    /// NULL or zero length means direct connections. Otherwise
+    /// `http://host[:port]`.
+    ///
+    /// Plaintext targets go through it in absolute-form. TLS targets are
+    /// refused: tunnelling them needs CONNECT, which this build does not have,
+    /// and going direct instead would quietly defeat the proxy.
+    pub proxy_url: *const u8,
+    pub proxy_url_len: usize,
 }
 
 #[repr(C)]
@@ -171,6 +180,8 @@ pub unsafe extern "C" fn geario_http_client_options_init(
         request_timeout_ms: 60_000,
         max_inflight_requests: DEFAULT_MAX_INFLIGHT,
         max_retries: 2,
+        proxy_url: std::ptr::null(),
+        proxy_url_len: 0,
     };
     unsafe { write_prefix(opts, defaults, struct_size) };
     GEARIO_HTTP_STATUS_OK
@@ -247,20 +258,34 @@ pub unsafe extern "C" fn geario_http_client_new(
     }
 
     let full = raw_size as usize >= std::mem::size_of::<GearioHttpClientOptions>();
-    let (connect_ms, request_ms, max_inflight, max_retries, flags) = if full {
+    let (connect_ms, request_ms, max_inflight, max_retries, flags, proxy) = if full {
         let o = unsafe { &*opts };
+        let proxy = if o.proxy_url.is_null() || o.proxy_url_len == 0 {
+            None
+        } else {
+            let raw =
+                unsafe { std::slice::from_raw_parts(o.proxy_url, o.proxy_url_len) };
+            match std::str::from_utf8(raw).ok().map(ProxyTarget::parse) {
+                Some(Ok(p)) => Some(p),
+                // A proxy that cannot be honoured is refused rather than
+                // ignored: connecting direct instead would be the one outcome
+                // the caller did not ask for.
+                _ => return GEARIO_HTTP_STATUS_INVALID_ARG,
+            }
+        };
         (
             o.connect_timeout_ms,
             o.request_timeout_ms,
             o.max_inflight_requests,
             o.max_retries,
             o.flags,
+            proxy,
         )
     } else {
         let flags = unsafe {
             std::ptr::read_unaligned(opts.cast::<u8>().add(8).cast::<u64>())
         };
-        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags)
+        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags, None)
     };
 
     // A flag this build does not know may be the one carrying a security
@@ -293,8 +318,12 @@ pub unsafe extern "C" fn geario_http_client_new(
                 .block_on(async move {
                     // Timeouts live on the shared config rather than on the
                     // builder, so they go in through SharedCfg.
-                    let client = Client::builder()
-                        .build(geario::service::cfg::SharedCfg::new("ffi-client"));
+                    let mut builder = Client::builder();
+                    if let Some(p) = proxy {
+                        builder = builder.proxy(p);
+                    }
+                    let client =
+                        builder.build(geario::service::cfg::SharedCfg::new("ffi-client"));
                     let _ = (connect_ms, request_ms);
                     let _ = ready_tx.send(true);
 

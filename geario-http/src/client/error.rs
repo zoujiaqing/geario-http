@@ -263,6 +263,10 @@ pub enum ClientError {
     /// Response took too long
     #[error("Timeout while waiting for response")]
     Timeout,
+    /// A TLS target was requested through a proxy, which needs a CONNECT
+    /// tunnel this build does not have.
+    #[error("TLS through a proxy needs a CONNECT tunnel, which is not implemented")]
+    ProxyTunnelNotSupported,
     /// Tunnels are not supported for http2 connection
     #[error("Tunnels are not supported for http2 connection")]
     TunnelNotSupported,
@@ -284,6 +288,7 @@ impl Clone for ClientError {
             ClientError::Response(err) => ClientError::Response(*err),
             ClientError::Http(err) => ClientError::Http(*err),
             ClientError::Timeout => ClientError::Timeout,
+            ClientError::ProxyTunnelNotSupported => ClientError::ProxyTunnelNotSupported,
             ClientError::TunnelNotSupported => ClientError::TunnelNotSupported,
             ClientError::Error(err) => ClientError::Error(err.clone()),
             ClientError::Send(err) => ClientError::Send(geario::util::clone_io_error(err)),
@@ -319,6 +324,7 @@ impl ErrorDiagnostic for ClientError {
             ClientError::Request(_) => "geario-client-Request",
             ClientError::Response(_) => "geario-client-Response",
             ClientError::Timeout => "geario-client-Timeout",
+            ClientError::ProxyTunnelNotSupported => "geario-client-ProxyTunnelNotSupported",
             ClientError::TunnelNotSupported => "geario-client-TunnelNotSupported",
             ClientError::Error(_) => "geario-client-SendBody",
         }

@@ -19,6 +19,7 @@ pub struct ClientConfig {
     pub(super) conn_lifetime: Duration,
     pub(super) conn_keep_alive: Duration,
     pub(super) limit: usize,
+    pub(super) proxy: Option<super::proxy::ProxyTarget>,
 
     config: CfgContext,
 }
@@ -56,9 +57,15 @@ impl ClientConfig {
             conn_lifetime: Duration::from_secs(75),
             conn_keep_alive: Duration::from_secs(15),
             limit: 8,
+            proxy: None,
 
             config: CfgContext::default(),
         }
+    }
+
+    /// The proxy every request goes through, if one is configured.
+    pub fn proxy(&self) -> Option<&super::proxy::ProxyTarget> {
+        self.proxy.as_ref()
     }
 
     pub fn headers(&self) -> &HeaderMap {
