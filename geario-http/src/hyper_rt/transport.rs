@@ -233,10 +233,18 @@ impl<F: Filter> Write for GearioTransport<F> {
         if self.io.is_wr_backpressure() {
             ready!(self.io.poll_flush(cx, false))?;
         }
-        // Take the whole slice. Backpressure is the check above, applied
-        // before accepting anything; capping each acceptance at the watermark
-        // instead splits a response that straddles it into two writes, and
-        // geario only reaches for writev when more than one page is queued.
+        // Hand it to the socket first. Buffering copies the bytes once here
+        // and again into the socket, and that second copy is proportional to
+        // the response: at 16 KB it showed up as the whole remaining gap
+        // against tokio, at 1 KB as nothing.
+        match self.io.get_ref().try_write_vectored(&[io::IoSlice::new(buf)]) {
+            Ok(0) => {}
+            Ok(n) => return Poll::Ready(Ok(n)),
+            Err(e) => return Poll::Ready(Err(e)),
+        }
+
+        // The socket would not take it: buffer, so the write interest gets
+        // armed and the connection parks instead of spinning.
         let len = buf.len();
         let res = self
             .io
@@ -269,6 +277,12 @@ impl<F: Filter> Write for GearioTransport<F> {
         // slices instead of flattening them into an intermediate buffer.
         // Taking them all in one call is what lets geario reach for writev
         // rather than issuing a write per slice.
+        match self.io.get_ref().try_write_vectored(bufs) {
+            Ok(0) => {}
+            Ok(n) => return Poll::Ready(Ok(n)),
+            Err(e) => return Poll::Ready(Err(e)),
+        }
+
         Poll::Ready(self.io.get_ref().with_write_buf(|dst| {
             let mut written = 0;
             for buf in bufs {
