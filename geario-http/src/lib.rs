@@ -21,6 +21,8 @@ mod service;
 pub mod client;
 pub mod error;
 pub mod h1;
+#[cfg(feature = "ws")]
+pub mod ws;
 pub mod types;
 
 pub use self::config::{DateService, HttpServiceConfig, KeepAlive};

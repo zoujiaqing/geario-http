@@ -43,11 +43,17 @@ becomes a version dependency once geario stabilises.
 | `full` | no | `http1` + `server` + `client` |
 | `compress` | no | gzip/deflate transfer encoding |
 | `cookie` | no | cookie parsing and building |
+| `rustls` | no | TLS, through geario's rustls layer |
+| `ws` | no | WebSocket client and codec |
 
 A server-only build is about 46% smaller than `full`, which matters when the
 library is linked into an FFI target.
 
-Reserved but not implemented: `http2`, `openssl`, `rustls`, `ws`, `test-server`.
+Reserved but not implemented: `http2`, `openssl`, `test-server`.
+
+An HTTP proxy is supported for plaintext targets. TLS through a proxy needs
+a CONNECT tunnel, which is not implemented, and is refused rather than sent
+direct.
 
 ## Trying it
 

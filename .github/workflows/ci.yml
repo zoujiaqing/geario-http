@@ -24,7 +24,8 @@ jobs:
       - name: check feature combinations
         working-directory: geario-http
         run: |
-          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie" "full,rustls"; do
+          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie" \
+                   "full,rustls" "full,ws" "full,ws,rustls,compress,cookie"; do
             echo "--- features: ${f:-default} ---"
             if [ -z "$f" ]; then
               cargo check -p geario-http
@@ -35,7 +36,7 @@ jobs:
 
       - name: test
         working-directory: geario-http
-        run: cargo test --features full,compress
+        run: cargo test --features full,ws,compress,cookie
 
       - name: ffi C examples
         working-directory: geario-http

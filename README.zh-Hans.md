@@ -40,10 +40,15 @@ C ABI 在这里不是补丁。Kotlin/Native 是一等消费者，所以 `geario-
 | `full` | 否 | `http1` + `server` + `client` |
 | `compress` | 否 | gzip/deflate 传输编码 |
 | `cookie` | 否 | cookie 解析与构建 |
+| `rustls` | 否 | TLS，走 geario 的 rustls 层 |
+| `ws` | 否 | WebSocket 客户端与 codec |
 
 只开 server 的构建比 `full` 小约 46%，这在把库链进 FFI 目标时是实际收益。
 
-已预留但尚未实现：`http2`、`openssl`、`rustls`、`ws`、`test-server`。
+已预留但尚未实现：`http2`、`openssl`、`test-server`。
+
+明文目标支持 HTTP 代理。TLS 走代理需要 CONNECT 隧道，尚未实现，
+会明确拒绝而不是绕过代理直连。
 
 ## 试用
 
