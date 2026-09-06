@@ -19,11 +19,13 @@ typedef int32_t GearioHttpStatus;
 #define GEARIO_HTTP_STATUS_UNKNOWN_FLAGS (-3)
 #define GEARIO_HTTP_STATUS_INVALID_ARG   (-4)
 #define GEARIO_HTTP_STATUS_UNSUPPORTED   (-5)
-#define GEARIO_HTTP_STATUS_WRONG_THREAD  (-6)
-#define GEARIO_HTTP_STATUS_CLOSED        (-7)
-#define GEARIO_HTTP_STATUS_OOM           (-8)
-#define GEARIO_HTTP_STATUS_WRONG_STATE   (-9)
-#define GEARIO_HTTP_STATUS_THROTTLED     (-10)
+#define GEARIO_HTTP_STATUS_CLOSED        (-6)
+#define GEARIO_HTTP_STATUS_OOM           (-7)
+#define GEARIO_HTTP_STATUS_THROTTLED     (-8)
+/*  -20 through -22 are left free; hyper4k has spent them. Codes with no
+ *  hyper4k counterpart start at -40. */
+#define GEARIO_HTTP_STATUS_WRONG_THREAD  (-40)
+#define GEARIO_HTTP_STATUS_WRONG_STATE   (-41)
 
 /** Capability bits. Derived from cargo features, so a bit cannot claim
  *  something this build does not contain. */

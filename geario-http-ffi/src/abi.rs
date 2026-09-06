@@ -21,22 +21,31 @@ pub const GEARIO_HTTP_STATUS_UNKNOWN_FLAGS: GearioHttpStatus = -3;
 pub const GEARIO_HTTP_STATUS_INVALID_ARG: GearioHttpStatus = -4;
 /// A combination this build does not implement. Ask the capability bits first.
 pub const GEARIO_HTTP_STATUS_UNSUPPORTED: GearioHttpStatus = -5;
-/// The handle was created on another worker thread. See `geario_server_start`.
-pub const GEARIO_HTTP_STATUS_WRONG_THREAD: GearioHttpStatus = -6;
 /// The client or server has been closed.
-pub const GEARIO_HTTP_STATUS_CLOSED: GearioHttpStatus = -7;
+pub const GEARIO_HTTP_STATUS_CLOSED: GearioHttpStatus = -6;
 /// A real allocation failure.
-pub const GEARIO_HTTP_STATUS_OOM: GearioHttpStatus = -8;
-/// The responder is not in a state that allows this call, such as answering
-/// one that is already streaming.
-pub const GEARIO_HTTP_STATUS_WRONG_STATE: GearioHttpStatus = -9;
+pub const GEARIO_HTTP_STATUS_OOM: GearioHttpStatus = -7;
 /// Deliberate throttling to stay under a configured ceiling. Distinct from
 /// OOM so operators are not sent hunting for a memory leak that is not there.
-pub const GEARIO_HTTP_STATUS_THROTTLED: GearioHttpStatus = -10;
+pub const GEARIO_HTTP_STATUS_THROTTLED: GearioHttpStatus = -8;
 
-/// ABI revision. Bumped whenever a struct layout or a function signature
-/// changes in a way a compiled caller could not survive.
-pub const GEARIO_HTTP_ABI_VERSION: u32 = 1;
+// -20 through -22 are left free. hyper4k uses them for NOT_FOUND,
+// ALREADY_DONE and NOT_PAUSED; nothing here needs them yet, and taking them
+// for something else would put a wrong meaning behind a number a host has
+// already learned.
+
+// Codes with no hyper4k counterpart start at -40, out of the way of anything
+// hyper4k might add.
+
+/// The handle was created on another worker thread. See `geario_server_start`.
+pub const GEARIO_HTTP_STATUS_WRONG_THREAD: GearioHttpStatus = -40;
+/// The responder is not in a state that allows this call, such as answering
+/// one that is already streaming.
+pub const GEARIO_HTTP_STATUS_WRONG_STATE: GearioHttpStatus = -41;
+
+/// ABI revision, `(major << 16) | minor`, the encoding hyper4k uses. A major
+/// change means a compiled caller cannot survive it.
+pub const GEARIO_HTTP_ABI_VERSION: u32 = (1 << 16) | 0;
 
 // ---------------------------------------------------------------------------
 // Capability bits
@@ -124,5 +133,49 @@ pub extern "C" fn geario_http_client_capabilities() -> u64 {
     #[cfg(not(feature = "client"))]
     {
         0
+    }
+}
+
+#[cfg(test)]
+mod status_code_tests {
+    use super::*;
+
+    /// The numbers are pinned against hyper4k's, spelled out rather than
+    /// computed, because the point is the exact value a compiled host has
+    /// already learned.
+    ///
+    /// These two ABIs are read by the same Kotlin host. Where both have a
+    /// code for the same condition it must be the same number: -7 meaning
+    /// "closed" here and "out of memory" there would have operators hunting
+    /// a memory leak that was a closed connection.
+    #[test]
+    fn shared_conditions_use_the_same_numbers_as_hyper4k() {
+        assert_eq!(GEARIO_HTTP_STATUS_OK, 0);
+        assert_eq!(GEARIO_HTTP_STATUS_ABI_MISMATCH, -1);
+        assert_eq!(GEARIO_HTTP_STATUS_STRUCT_SIZE, -2);
+        assert_eq!(GEARIO_HTTP_STATUS_UNKNOWN_FLAGS, -3);
+        assert_eq!(GEARIO_HTTP_STATUS_INVALID_ARG, -4);
+        assert_eq!(GEARIO_HTTP_STATUS_UNSUPPORTED, -5);
+        assert_eq!(GEARIO_HTTP_STATUS_CLOSED, -6);
+        assert_eq!(GEARIO_HTTP_STATUS_OOM, -7);
+        assert_eq!(GEARIO_HTTP_STATUS_THROTTLED, -8);
+    }
+
+    /// Codes with no hyper4k counterpart stay out of the range hyper4k has
+    /// already spent, including -20 through -22.
+    #[test]
+    fn geario_only_codes_stay_clear_of_hyper4k_s_range() {
+        for code in [
+            GEARIO_HTTP_STATUS_WRONG_THREAD,
+            GEARIO_HTTP_STATUS_WRONG_STATE,
+        ] {
+            assert!(code <= -40, "{code} is inside hyper4k's range");
+        }
+    }
+
+    #[test]
+    fn abi_version_is_major_shifted_by_sixteen() {
+        assert_eq!(GEARIO_HTTP_ABI_VERSION >> 16, 1, "major");
+        assert_eq!(GEARIO_HTTP_ABI_VERSION & 0xffff, 0, "minor");
     }
 }
