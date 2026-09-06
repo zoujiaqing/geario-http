@@ -1,0 +1,16 @@
+[workspace]
+resolver = "2"
+members = ["server-geario", "server-hyper", "server-hyper-st", "server-hyper-on-geario", "client"]
+
+# Excluded from the geario-http workspace so hyper and tokio never enter its
+# dependency tree.
+
+[profile.release]
+# Frame pointers and symbols so a profiler can attribute samples; neither
+# changes the generated code.
+debug = 1
+force-frame-pointers = true
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

@@ -1,0 +1,12 @@
+[package]
+name = "server-hyper-on-geario"
+version = "0.1.0"
+edition = "2024"
+
+# hyper's protocol over geario's IO and workers. No tokio.
+[dependencies]
+geario = { path = "../../../geario/geario" }
+geario-http = { path = "../../geario-http", default-features = false, features = ["hyper-rt"] }
+hyper = { version = "1.11", features = ["http1", "server"] }
+http-body-util = "0.1"
+bytes = "1"

@@ -21,6 +21,8 @@ mod service;
 pub mod client;
 pub mod error;
 pub mod h1;
+#[cfg(feature = "hyper-rt")]
+pub mod hyper_rt;
 #[cfg(feature = "ws")]
 pub mod ws;
 pub mod types;

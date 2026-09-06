@@ -41,6 +41,9 @@ rustls = ["geario/rustls", "tls_rustls", "webpki-roots"]
 # WebSocket, over the same Io as everything else.
 ws = ["client", "nanorand"]
 
+# Run upstream hyper on geario's IO and executor.
+hyper-rt = ["hyper"]
+
 # Reserved: no implementation yet.
 openssl = []
 test-server = []
@@ -66,6 +69,7 @@ coo-kie = { workspace = true, optional = true }
 ntex-httparse = { workspace = true }
 bitflags = { workspace = true }
 pin-project-lite = { workspace = true }
+hyper = { workspace = true, optional = true }
 tls_rustls = { workspace = true, optional = true }
 webpki-roots = { workspace = true, optional = true }
 derive_more = { workspace = true, features = ["debug"] }
