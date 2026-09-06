@@ -67,7 +67,7 @@ mod tests {
     }
 
     #[geario::test]
-    async fn vectored_write_is_partial_and_backpressured() {
+    async fn vectored_write_takes_every_slice_then_backpressures() {
         let (peer, stream) = IoTest::create();
         peer.remote_buffer_cap(0);
         let mut io = GearioTransport::new(Io::new(
@@ -76,27 +76,44 @@ mod tests {
         ));
         // Initialize the test stream's IO tasks before writing.
         let _ = lazy(|cx| io.io.poll_read_ready(cx)).await;
-        let slices = [io::IoSlice::new(b""), io::IoSlice::new(b"header"), io::IoSlice::new(b"0123456789abcdef")];
-        let n = poll_fn(|cx| Pin::new(&mut io).poll_write_vectored(cx, &slices)).await.unwrap();
-        assert_eq!(n, 16);
-        // At the watermark a further bounded write may be accepted, but
-        // repeated writes must stop even when flush was never called.
-        let mut accepted = n;
-        for _ in 0..4 {
+
+        // Every slice is taken in one call. Splitting a response across calls
+        // is what leaves geario with a single page per wakeup, and it only
+        // reaches for writev when more than one page is queued: an earlier
+        // version capped each call at the watermark and cost an extra write
+        // syscall on any response that straddled it.
+        let slices = [
+            io::IoSlice::new(b""),
+            io::IoSlice::new(b"header"),
+            io::IoSlice::new(b"0123456789abcdef"),
+        ];
+        let total: usize = slices.iter().map(|s| s.len()).sum();
+        let n = poll_fn(|cx| Pin::new(&mut io).poll_write_vectored(cx, &slices))
+            .await
+            .unwrap();
+        assert_eq!(n, total, "a slice was dropped or truncated");
+
+        // Backpressure is applied before accepting, not by truncating: with
+        // the peer refusing to read, further writes have to stop.
+        let mut extra = 0;
+        for _ in 0..8 {
             match lazy(|cx| Pin::new(&mut io).poll_write(cx, b"tail")).await {
-                Poll::Ready(Ok(n)) => accepted += n,
+                Poll::Ready(Ok(n)) => extra += n,
                 Poll::Pending => break,
                 other => panic!("unexpected write: {other:?}"),
             }
         }
-        assert!(accepted <= 20);
-        assert!(lazy(|cx| Pin::new(&mut io).poll_write(cx, b"blocked")).await.is_pending());
+        assert!(
+            lazy(|cx| Pin::new(&mut io).poll_write(cx, b"blocked")).await.is_pending(),
+            "writes never stopped even though the peer reads nothing"
+        );
         assert!(lazy(|cx| Pin::new(&mut io).poll_flush(cx)).await.is_pending());
+
         peer.remote_buffer_cap(1024);
         poll_fn(|cx| Pin::new(&mut io).poll_flush(cx)).await.unwrap();
         let bytes = peer.read_any();
-        assert_eq!(&bytes[..16], b"header0123456789");
-        assert_eq!(bytes.len(), accepted);
+        assert_eq!(&bytes[..total], b"header0123456789abcdef");
+        assert_eq!(bytes.len(), total + extra);
         assert!(io.is_write_vectored());
     }
 
@@ -216,13 +233,15 @@ impl<F: Filter> Write for GearioTransport<F> {
         if self.io.is_wr_backpressure() {
             ready!(self.io.poll_flush(cx, false))?;
         }
-        // Limit each acceptance to one high watermark. Together with the
-        // check above this bounds queued writes even if hyper hasn't flushed.
-        let len = buf.len().min(self.io.cfg().write_buf().high.max(1));
+        // Take the whole slice. Backpressure is the check above, applied
+        // before accepting anything; capping each acceptance at the watermark
+        // instead splits a response that straddles it into two writes, and
+        // geario only reaches for writev when more than one page is queued.
+        let len = buf.len();
         let res = self
             .io
             .get_ref()
-            .with_write_buf(|dst| dst.extend_from_slice(&buf[..len]));
+            .with_write_buf(|dst| dst.extend_from_slice(buf));
         match res {
             Ok(()) => Poll::Ready(Ok(len)),
             Err(e) => Poll::Ready(Err(e)),
@@ -246,19 +265,15 @@ impl<F: Filter> Write for GearioTransport<F> {
         if self.io.is_wr_backpressure() {
             ready!(self.io.poll_flush(cx, false))?;
         }
-        let limit = self.io.cfg().write_buf().high.max(1);
-        // Advertising vectored writes makes hyper queue header/body slices
-        // instead of flattening them into an intermediate buffer. Copy into
-        // geario once, and consolidate/wake its writer once for the batch.
+        // Advertising vectored writes makes hyper queue header and body
+        // slices instead of flattening them into an intermediate buffer.
+        // Taking them all in one call is what lets geario reach for writev
+        // rather than issuing a write per slice.
         Poll::Ready(self.io.get_ref().with_write_buf(|dst| {
             let mut written = 0;
             for buf in bufs {
-                let n = buf.len().min(limit - written);
-                dst.extend_from_slice(&buf[..n]);
-                written += n;
-                if written == limit {
-                    break;
-                }
+                dst.extend_from_slice(buf);
+                written += buf.len();
             }
             written
         }))

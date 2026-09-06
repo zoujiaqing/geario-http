@@ -3,7 +3,13 @@ name = "server-hyper-on-geario"
 version = "0.1.0"
 edition = "2024"
 
-# hyper's protocol over geario's IO and workers. No tokio.
+[features]
+# Force a driver instead of letting geario pick. Default on Linux tries
+# io_uring and falls back to polling, so "which one ran" is not obvious.
+uring = ["geario/neon-uring"]
+polling = ["geario/neon-polling"]
+
+# hyper's protocol over geario's IO and workers. No tokio runtime.
 [dependencies]
 geario = { path = "../../../geario/geario" }
 geario-http = { path = "../../geario-http", default-features = false, features = ["hyper-rt"] }
