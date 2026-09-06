@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["server-geario", "server-hyper", "server-hyper-st", "server-hyper-on-geario", "client"]
+members = ["server-geario", "server-hyper", "server-hyper-st", "server-hyper-on-geario", "server-h2-geario", "server-h2-tokio", "client", "client-h2"]
 
 # Excluded from the geario-http workspace so hyper and tokio never enter its
 # dependency tree.

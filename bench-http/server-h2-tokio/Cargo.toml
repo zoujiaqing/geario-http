@@ -1,0 +1,11 @@
+[package]
+name = "server-h2-tokio"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["rt", "net", "macros"] }
+hyper = { version = "1.11", features = ["http2", "server"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
+bytes = "1"

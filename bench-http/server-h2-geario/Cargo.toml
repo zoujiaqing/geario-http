@@ -1,0 +1,15 @@
+[package]
+name = "server-h2-geario"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+uring = ["geario/neon-uring"]
+polling = ["geario/neon-polling"]
+
+[dependencies]
+geario = { path = "../../../geario/geario" }
+geario-http = { path = "../../geario-http", default-features = false, features = ["hyper-rt"] }
+hyper = { version = "1.11", features = ["http2", "server"] }
+http-body-util = "0.1"
+bytes = "1"
