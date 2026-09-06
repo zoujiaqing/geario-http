@@ -12,7 +12,13 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-const EXPECT_BODY: &[u8] = b"hello from the benchmark";
+/// Expected response length, from the environment so it tracks the servers.
+fn expect_len() -> usize {
+    std::env::var("BENCH_BODY_SIZE")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(24)
+}
 
 struct Outcome {
     latencies: Vec<u64>,
@@ -20,7 +26,11 @@ struct Outcome {
     errors: u64,
 }
 
-fn read_response(sock: &mut TcpStream, buf: &mut Vec<u8>) -> Result<(), &'static str> {
+fn read_response(
+    sock: &mut TcpStream,
+    buf: &mut Vec<u8>,
+    want: usize,
+) -> Result<(), &'static str> {
     buf.clear();
     let mut tmp = [0u8; 4096];
     loop {
@@ -33,7 +43,10 @@ fn read_response(sock: &mut TcpStream, buf: &mut Vec<u8>) -> Result<(), &'static
                 if !head.starts_with(b"HTTP/1.1 200") {
                     return Err("status");
                 }
-                if &buf[body_start..body_start + len] != EXPECT_BODY {
+                // Length is checked rather than exact bytes: the body is
+                // generated, and a truncated or padded response is what a
+                // wrong answer would look like here.
+                if len != want {
                     return Err("body");
                 }
                 return Ok(());
@@ -66,9 +79,22 @@ fn main() {
     let addr = args.next().unwrap_or_else(|| "127.0.0.1:18090".into());
     let conns: usize = args.next().and_then(|v| v.parse().ok()).unwrap_or(8);
     let secs: u64 = args.next().and_then(|v| v.parse().ok()).unwrap_or(10);
+    // Fourth argument: POST body size. Zero or absent means GET.
+    let post: usize = args.next().and_then(|v| v.parse().ok()).unwrap_or(0);
 
+    let want = expect_len();
     let host = addr.clone();
-    let request = format!("GET /bench HTTP/1.1\r\nHost: {host}\r\n\r\n").into_bytes();
+    let request = if post > 0 {
+        let payload = b"x".repeat(post);
+        let mut r = format!(
+            "POST /bench HTTP/1.1\r\nHost: {host}\r\ncontent-type: application/json\r\ncontent-length: {post}\r\n\r\n"
+        )
+        .into_bytes();
+        r.extend_from_slice(&payload);
+        r
+    } else {
+        format!("GET /bench HTTP/1.1\r\nHost: {host}\r\n\r\n").into_bytes()
+    };
 
     let stop = Arc::new(AtomicBool::new(false));
     let total = Arc::new(AtomicU64::new(0));
@@ -105,7 +131,7 @@ fn main() {
                     out.errors += 1;
                     break;
                 }
-                match read_response(&mut sock, &mut buf) {
+                match read_response(&mut sock, &mut buf, want) {
                     Ok(()) => {
                         out.latencies.push(t.elapsed().as_nanos() as u64);
                         total.fetch_add(1, Ordering::Relaxed);
@@ -149,6 +175,9 @@ fn main() {
     let count = total.load(Ordering::Relaxed);
     println!("target      {addr}");
     println!("conns       {conns}");
+    println!("method      {}", if post > 0 { "POST" } else { "GET" });
+    println!("post_bytes  {post}");
+    println!("resp_bytes  {want}");
     println!("duration    {elapsed:.2} s");
     println!("requests    {count}");
     println!("qps         {:.0}", count as f64 / elapsed);

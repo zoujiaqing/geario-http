@@ -7,7 +7,24 @@ use std::io;
 use geario::service::cfg::SharedCfg;
 use geario_http::{HttpService, Request, Response};
 
-const BODY: &[u8] = b"hello from the benchmark";
+
+/// Response body of the configured size, built once.
+///
+/// A repeating pattern rather than zeros: a compressible or all-zero body can
+/// be handled differently by the stack than realistic bytes.
+fn body_bytes() -> &'static [u8] {
+    use std::sync::OnceLock;
+    static BODY: OnceLock<Vec<u8>> = OnceLock::new();
+    BODY.get_or_init(|| {
+        let n: usize = std::env::var("BENCH_BODY_SIZE")
+            .ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(24);
+        let seed = b"hello from the benchmark ";
+        seed.iter().copied().cycle().take(n).collect()
+    })
+    .as_slice()
+}
 
 #[geario::main]
 async fn main() -> io::Result<()> {
@@ -35,11 +52,27 @@ async fn main() -> io::Result<()> {
         .disable_signals()
         .workers(workers)
         .bind("bench", addr, SharedCfg::new("BENCH"), async |_| {
-            HttpService::new(async move |_req: Request| {
+            HttpService::new(async move |mut req: Request| {
+                // Drain the request body. A server that skips it is not doing
+                // the work the POST case is meant to measure.
+                if req.method() == geario_http::Method::POST {
+                    use geario::util::future::Stream;
+                    let mut pl = req.take_payload();
+                    loop {
+                        let next = std::future::poll_fn(|cx| {
+                            std::pin::Pin::new(&mut pl).poll_next(cx)
+                        })
+                        .await;
+                        match next {
+                            Some(Ok(_)) => {}
+                            _ => break,
+                        }
+                    }
+                }
                 Ok::<_, io::Error>(
                     Response::Ok()
-                        .header("content-type", "text/plain")
-                        .body(BODY),
+                        .header("content-type", "application/json")
+                        .body(body_bytes()),
                 )
             })
             .build()
