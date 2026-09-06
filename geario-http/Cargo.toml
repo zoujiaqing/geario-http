@@ -79,6 +79,11 @@ serde = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+# Only to prove a transport test against a known-good transport.
+tokio = { version = "1", features = ["rt", "net", "macros", "io-util"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+hyper = { workspace = true, features = ["http1", "http2", "client", "server"] }
+http-body-util = "0.1"
 bincode = { workspace = true }
 serde_json = { workspace = true }
 geario = { workspace = true }

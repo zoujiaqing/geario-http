@@ -1,7 +1,7 @@
 //! hyper's HTTP/1.1 running on geario's IO and workers.
 //!
 //! The point of this build: hyper owns the protocol, geario owns accept,
-//! workers, sockets and buffers. No tokio anywhere.
+//! workers, sockets and buffers. It does not start a Tokio runtime.
 use std::convert::Infallible;
 use std::io;
 
@@ -9,7 +9,7 @@ use bytes::Bytes;
 use geario::io::Io;
 use geario::service::cfg::SharedCfg;
 use geario::service::fn_service;
-use geario_http::hyper_rt::{GearioExecutor, GearioTransport};
+use geario_http::hyper_rt::GearioTransport;
 use http_body_util::Full;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
