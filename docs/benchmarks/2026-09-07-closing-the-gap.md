@@ -55,7 +55,7 @@ has no support for it.
 
 | Case | geario against hyper on tokio |
 | --- | --- |
-| HTTP/1.1, 1 KB, 64 conns | +3.19%, 95% CI [-4.92%, +11.12%] |
+| HTTP/1.1, 1 KB, 64 conns | -2.40%, 95% CI [-8.69%, +3.93%], n=20 pooled |
 | HTTP/1.1, 16 KB, 64 conns | **-4.66%, 95% CI [-9.61%, +0.42%]**, n=22 pooled |
 | HTTP/2, 16 KB, 4 conns x 16 streams | **-1.07%, 95% CI [-7.15%, +5.41%]** |
 | HTTP/1.1, 16 KB, 64 conns, io_uring driver | -3.54%, 95% CI [-12.25%, +5.39%] |
@@ -64,11 +64,16 @@ Every interval contains zero: at these sizes and connection counts the two are
 not distinguishable. The user-space memmove is gone and the kernel copy
 matches tokio's, 13.09% against 14.07%.
 
-The 16 KB HTTP/1.1 figure pools two runs of the same binaries, twelve rounds
-and ten, which on their own gave -2.15% [-6.80%, +3.05%] and -7.68%
-[-16.43%, +1.56%]. That spread between two runs of the same thing is the
-honest measure of what this host can resolve: a few percent is below the
-noise floor here, and no amount of arithmetic on this data will decide it.
+Both HTTP/1.1 figures pool two runs of the same binaries. On their own the
+16 KB runs gave -2.15% [-6.80%, +3.05%] and -7.68% [-16.43%, +1.56%], and the
+1 KB runs +3.19% [-5.00%, +11.21%] and -7.99% [-16.06%, +0.35%]. An eleven
+point spread between two runs of the same thing is the honest measure of what
+this host can resolve: a few percent is below the noise floor here, and no
+amount of arithmetic on this data will decide it.
+
+That is also why the earlier sequence is stated as syscall counts wherever it
+can be. Those are exact, they were what the changes were aimed at, and they
+do not move between runs.
 
 ## The io_uring driver
 
