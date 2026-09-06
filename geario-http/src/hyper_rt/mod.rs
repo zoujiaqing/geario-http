@@ -14,11 +14,14 @@
 //!
 //! Vectored writes let hyper retain separate header/body slices until they
 //! reach geario's write buffer, avoiding hyper's intermediate flattening
-//! copy. This is still buffered IO, not zero-copy transport. Writes honor
-//! geario's high watermark, and flush waits for all buffered output.
+//! copy. A write that the socket can take goes there directly, without
+//! passing through the write buffer at all; the buffer is the fallback for
+//! when it cannot, and taking it is what applies backpressure.
 
 mod executor;
+mod timer;
 mod transport;
 
 pub use self::executor::GearioExecutor;
+pub use self::timer::GearioTimer;
 pub use self::transport::GearioTransport;

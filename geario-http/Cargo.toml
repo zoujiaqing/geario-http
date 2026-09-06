@@ -41,8 +41,17 @@ rustls = ["geario/rustls", "tls_rustls", "webpki-roots"]
 # WebSocket, over the same Io as everything else.
 ws = ["client", "nanorand"]
 
-# Run upstream hyper on geario's IO and executor.
+# Run upstream hyper on geario's IO, executor and timer.
+#
+# The protocol versions and roles are hyper's own features, forwarded here so
+# a consumer names what it wants once. `hyper-rt` alone brings the adapter
+# types and nothing to drive with them.
 hyper-rt = ["hyper"]
+hyper-http1 = ["hyper-rt", "hyper/http1"]
+hyper-http2 = ["hyper-rt", "hyper/http2"]
+hyper-server = ["hyper-rt", "hyper/server"]
+hyper-client = ["hyper-rt", "hyper/client"]
+hyper-full = ["hyper-http1", "hyper-http2", "hyper-server", "hyper-client"]
 
 # Reserved: no implementation yet.
 openssl = []
