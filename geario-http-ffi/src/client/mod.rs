@@ -52,11 +52,18 @@ pub struct GearioHttpClientOptions {
     /// NULL or zero length means direct connections. Otherwise
     /// `http://host[:port]`.
     ///
-    /// Plaintext targets go through it in absolute-form. TLS targets are
-    /// refused: tunnelling them needs CONNECT, which this build does not have,
-    /// and going direct instead would quietly defeat the proxy.
+    /// Plaintext targets go through it in absolute-form. TLS targets get a
+    /// CONNECT tunnel first. A proxy URL that cannot be honoured is refused
+    /// rather than ignored, since connecting direct is the one outcome the
+    /// caller did not ask for.
     pub proxy_url: *const u8,
     pub proxy_url_len: usize,
+    /// A PEM bundle of extra trusted CAs, or NULL for the built-in roots
+    /// alone. Added to the roots, or used instead of them under
+    /// `GEARIO_HTTP_CLIENT_CA_REPLACE_SYSTEM`. A bundle that holds no
+    /// certificate is refused here, not on the first request.
+    pub custom_ca_pem: *const u8,
+    pub custom_ca_pem_len: usize,
 }
 
 #[repr(C)]
@@ -184,6 +191,8 @@ pub unsafe extern "C" fn geario_http_client_options_init(
         max_retries: 2,
         proxy_url: std::ptr::null(),
         proxy_url_len: 0,
+        custom_ca_pem: std::ptr::null(),
+        custom_ca_pem_len: 0,
     };
     unsafe { write_prefix(opts, defaults, struct_size) };
     GEARIO_HTTP_STATUS_OK
@@ -264,8 +273,16 @@ pub unsafe extern "C" fn geario_http_client_new(
     }
 
     let full = raw_size as usize >= std::mem::size_of::<GearioHttpClientOptions>();
-    let (connect_ms, request_ms, max_inflight, max_retries, flags, proxy) = if full {
+    let (connect_ms, request_ms, max_inflight, max_retries, flags, proxy, custom_ca) = if full {
         let o = unsafe { &*opts };
+        let custom_ca = if o.custom_ca_pem.is_null() || o.custom_ca_pem_len == 0 {
+            None
+        } else {
+            Some(
+                unsafe { std::slice::from_raw_parts(o.custom_ca_pem, o.custom_ca_pem_len) }
+                    .to_vec(),
+            )
+        };
         let proxy = if o.proxy_url.is_null() || o.proxy_url_len == 0 {
             None
         } else {
@@ -285,10 +302,11 @@ pub unsafe extern "C" fn geario_http_client_new(
             o.max_retries,
             o.flags,
             proxy,
+            custom_ca,
         )
     } else {
         let flags = unsafe { std::ptr::read_unaligned(opts.cast::<u8>().add(8).cast::<u64>()) };
-        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags, None)
+        (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags, None, None)
     };
 
     // A flag this build does not know may be the one carrying a security
@@ -298,6 +316,16 @@ pub unsafe extern "C" fn geario_http_client_new(
         return GEARIO_HTTP_STATUS_UNKNOWN_FLAGS;
     }
     let require_h2 = flags & GEARIO_HTTP_CLIENT_HTTP2_REQUIRED != 0;
+    let replace_system = flags & GEARIO_HTTP_CLIENT_CA_REPLACE_SYSTEM != 0;
+    // A custom CA bundle is validated now: a bundle that parses to nothing is
+    // a configuration error, and deferring it to the first https request
+    // would make it look like a network problem.
+    if custom_ca.is_some() {
+        let _ = tls_rustls::crypto::aws_lc_rs::default_provider().install_default();
+        if Tls::new(custom_ca.as_deref(), replace_system, require_h2).is_err() {
+            return GEARIO_HTTP_STATUS_INVALID_ARG;
+        }
+    }
 
     let max_inflight = if max_inflight == 0 {
         DEFAULT_MAX_INFLIGHT
@@ -325,10 +353,11 @@ pub unsafe extern "C" fn geario_http_client_new(
                     // it here is idempotent and harmless if the host already
                     // did. Without it every https request would fail.
                     let _ = tls_rustls::crypto::aws_lc_rs::default_provider().install_default();
-                    let tls = match Tls::new(None, false, require_h2) {
+                    let tls = match Tls::new(custom_ca.as_deref(), replace_system, require_h2) {
                         Ok(t) => Some(t),
                         // No usable TLS: https will report UNSUPPORTED, http
-                        // still works. Not a reason to refuse to start.
+                        // still works. Not a reason to refuse to start. A bad
+                        // custom bundle was already refused in client_new.
                         Err(_) => None,
                     };
                     let connect_timeout =

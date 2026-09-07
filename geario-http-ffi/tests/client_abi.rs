@@ -252,3 +252,34 @@ fn options_default_to_no_proxy() {
     assert!(opts.proxy_url.is_null());
     assert_eq!(opts.proxy_url_len, 0);
 }
+
+/// A custom CA bundle is validated when the client is built, not deferred to
+/// the first request. A bundle that parses to no certificate is a
+/// configuration error the caller should see immediately.
+#[test]
+fn a_custom_ca_bundle_with_no_certificate_is_refused() {
+    let mut opts = default_options();
+    let garbage = b"-----BEGIN CERTIFICATE-----\nnot base64 at all\n-----END CERTIFICATE-----\n";
+    opts.custom_ca_pem = garbage.as_ptr();
+    opts.custom_ca_pem_len = garbage.len();
+    let mut out = std::ptr::null_mut();
+    assert_eq!(
+        unsafe { geario_http_client_new(&opts, &mut out) },
+        GEARIO_HTTP_STATUS_INVALID_ARG
+    );
+    assert!(out.is_null());
+}
+
+/// An empty (but structurally fine) bundle is still no certificate.
+#[test]
+fn an_empty_custom_ca_bundle_is_refused() {
+    let mut opts = default_options();
+    let empty = b"# a comment, no certificates here\n";
+    opts.custom_ca_pem = empty.as_ptr();
+    opts.custom_ca_pem_len = empty.len();
+    let mut out = std::ptr::null_mut();
+    assert_eq!(
+        unsafe { geario_http_client_new(&opts, &mut out) },
+        GEARIO_HTTP_STATUS_INVALID_ARG
+    );
+}

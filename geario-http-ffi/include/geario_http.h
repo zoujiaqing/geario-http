@@ -210,10 +210,17 @@ typedef struct {
      *  refused: tunnelling them needs CONNECT, which this build does not have,
      *  and going direct instead would quietly defeat the proxy.
      *
-     *  A proxy URL that cannot be honoured returns
+     *  Plaintext targets go through it in absolute-form; TLS targets get a
+     *  CONNECT tunnel. A proxy URL that cannot be honoured returns
      *  GEARIO_HTTP_STATUS_INVALID_ARG rather than being ignored. */
     const unsigned char *proxy_url;
     size_t proxy_url_len;
+    /** A PEM bundle of extra trusted CAs, or NULL for the built-in roots
+     *  alone. Added to the roots, or used instead of them under
+     *  GEARIO_HTTP_CLIENT_CA_REPLACE_SYSTEM. A bundle holding no certificate
+     *  returns GEARIO_HTTP_STATUS_INVALID_ARG from geario_http_client_new. */
+    const unsigned char *custom_ca_pem;
+    size_t custom_ca_pem_len;
 } GearioHttpClientOptions;
 
 typedef struct {
