@@ -21,7 +21,14 @@ workspace = true
 default = ["server", "client"]
 # The server runs hyper over geario: HTTP/1.1 and h2c on one port.
 server = ["geario-http/hyper-server", "geario-http/hyper-http1", "geario-http/hyper-http2"]
-client = ["geario-http/client"]
+client = [
+    "geario-http/client",
+    "geario-http/hyper-client",
+    "geario-http/hyper-http1",
+    "geario-http/hyper-http2",
+    "geario-http/rustls",
+    "geario/rustls",
+]
 
 [dependencies]
 geario = { workspace = true }
@@ -31,6 +38,11 @@ http-body-util = { workspace = true }
 async-channel = { workspace = true }
 futures-core = { workspace = true }
 log = { workspace = true }
+tls_rustls = { workspace = true }
+webpki-roots = { workspace = true }
+
+[dev-dependencies]
+rcgen = { workspace = true }
 
 [profile.release]
 # A panic must not cross the FFI boundary; that is undefined behaviour.

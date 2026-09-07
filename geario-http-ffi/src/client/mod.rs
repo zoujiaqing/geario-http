@@ -11,6 +11,8 @@ use futures_core::Stream;
 use geario_http::client::Client;
 use geario_http::client::proxy::ProxyTarget;
 
+mod connect;
+
 use crate::abi::*;
 use crate::slice::{GearioHttpError, GearioHttpHeader, GearioHttpSlice};
 
