@@ -63,8 +63,9 @@ impl TimerSleep {
     }
 
     fn reset(self: Pin<&mut Self>, deadline: Instant) {
-        self.0
-            .reset(to_millis(deadline.saturating_duration_since(Instant::now())));
+        self.0.reset(to_millis(
+            deadline.saturating_duration_since(Instant::now()),
+        ));
     }
 }
 
@@ -87,7 +88,10 @@ mod tests {
         let started = Instant::now();
         GearioTimer::new().sleep(Duration::from_millis(60)).await;
         let waited = started.elapsed();
-        assert!(waited >= Duration::from_millis(50), "returned early: {waited:?}");
+        assert!(
+            waited >= Duration::from_millis(50),
+            "returned early: {waited:?}"
+        );
         assert!(waited < Duration::from_secs(5), "far too long: {waited:?}");
     }
 
@@ -107,6 +111,9 @@ mod tests {
         timer.reset(&mut sleep, Instant::now() + Duration::from_millis(120));
         sleep.await;
         let waited = started.elapsed();
-        assert!(waited >= Duration::from_millis(100), "reset was ignored: {waited:?}");
+        assert!(
+            waited >= Duration::from_millis(100),
+            "reset was ignored: {waited:?}"
+        );
     }
 }

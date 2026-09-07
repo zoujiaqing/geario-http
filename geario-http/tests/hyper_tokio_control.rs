@@ -58,13 +58,11 @@ fn http1_streaming_post_and_keep_alive_on_tokio() {
                 .header("host", "test")
                 .body(Full::new(expected.clone()))
                 .unwrap();
-            let resp = tokio::time::timeout(
-                std::time::Duration::from_secs(5),
-                sender.send_request(req),
-            )
-            .await
-            .expect("send_request timed out on tokio")
-            .expect("send_request failed on tokio");
+            let resp =
+                tokio::time::timeout(std::time::Duration::from_secs(5), sender.send_request(req))
+                    .await
+                    .expect("send_request timed out on tokio")
+                    .expect("send_request failed on tokio");
             assert_eq!(resp.status(), 200);
             let got = tokio::time::timeout(
                 std::time::Duration::from_secs(5),

@@ -31,11 +31,11 @@ pub struct GearioTransport<F> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::future::poll_fn;
     use geario::io::{IoConfig, testing::IoTest};
     use geario::service::cfg::SharedCfg;
     use geario::util::future::lazy;
     use hyper::rt::ReadBuf;
+    use std::future::poll_fn;
 
     #[geario::test]
     async fn reads_partial_buffers_and_empty_cursor() {
@@ -43,26 +43,40 @@ mod tests {
         let mut io = GearioTransport::new(Io::new(stream, SharedCfg::new("READ")));
         let mut empty = [];
         let mut empty = ReadBuf::new(&mut empty);
-        assert!(lazy(|cx| Pin::new(&mut io).poll_read(cx, empty.unfilled())).await.is_ready());
+        assert!(
+            lazy(|cx| Pin::new(&mut io).poll_read(cx, empty.unfilled()))
+                .await
+                .is_ready()
+        );
 
         peer.write(b"abcdef");
         let mut actual = Vec::new();
         for _ in 0..3 {
             let mut bytes = [0; 2];
             let mut buf = ReadBuf::new(&mut bytes);
-            poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled())).await.unwrap();
+            poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled()))
+                .await
+                .unwrap();
             actual.extend_from_slice(buf.filled());
         }
         assert_eq!(actual, b"abcdef");
         let mut bytes = [0; 8];
         let mut buf = ReadBuf::new(&mut bytes);
-        assert!(lazy(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled())).await.is_pending());
+        assert!(
+            lazy(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled()))
+                .await
+                .is_pending()
+        );
         peer.write(b"next");
-        poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled())).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled()))
+            .await
+            .unwrap();
         assert_eq!(buf.filled(), b"next");
         peer.close().await;
         let mut buf = ReadBuf::new(&mut bytes);
-        poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled())).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_read(cx, buf.unfilled()))
+            .await
+            .unwrap();
         assert!(buf.filled().is_empty());
     }
 
@@ -104,13 +118,21 @@ mod tests {
             }
         }
         assert!(
-            lazy(|cx| Pin::new(&mut io).poll_write(cx, b"blocked")).await.is_pending(),
+            lazy(|cx| Pin::new(&mut io).poll_write(cx, b"blocked"))
+                .await
+                .is_pending(),
             "writes never stopped even though the peer reads nothing"
         );
-        assert!(lazy(|cx| Pin::new(&mut io).poll_flush(cx)).await.is_pending());
+        assert!(
+            lazy(|cx| Pin::new(&mut io).poll_flush(cx))
+                .await
+                .is_pending()
+        );
 
         peer.remote_buffer_cap(1024);
-        poll_fn(|cx| Pin::new(&mut io).poll_flush(cx)).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_flush(cx))
+            .await
+            .unwrap();
         let bytes = peer.read_any();
         assert_eq!(&bytes[..total], b"header0123456789abcdef");
         assert_eq!(bytes.len(), total + extra);
@@ -123,16 +145,32 @@ mod tests {
         peer.remote_buffer_cap(0);
         let mut io = GearioTransport::new(Io::new(stream, SharedCfg::new("FLUSH")));
         let _ = lazy(|cx| io.io.poll_read_ready(cx)).await;
-        poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"small")).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"small"))
+            .await
+            .unwrap();
         // Below the low watermark still is not a completed flush.
-        assert!(lazy(|cx| Pin::new(&mut io).poll_flush(cx)).await.is_pending());
+        assert!(
+            lazy(|cx| Pin::new(&mut io).poll_flush(cx))
+                .await
+                .is_pending()
+        );
         peer.remote_buffer_cap(1024);
-        poll_fn(|cx| Pin::new(&mut io).poll_flush(cx)).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_flush(cx))
+            .await
+            .unwrap();
         assert_eq!(&peer.read_any()[..], b"small");
-        poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"tail")).await.unwrap();
-        poll_fn(|cx| Pin::new(&mut io).poll_shutdown(cx)).await.unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"tail"))
+            .await
+            .unwrap();
+        poll_fn(|cx| Pin::new(&mut io).poll_shutdown(cx))
+            .await
+            .unwrap();
         assert_eq!(&peer.read_any()[..], b"tail");
-        assert!(poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"late")).await.is_err());
+        assert!(
+            poll_fn(|cx| Pin::new(&mut io).poll_write(cx, b"late"))
+                .await
+                .is_err()
+        );
     }
 }
 
@@ -237,7 +275,11 @@ impl<F: Filter> Write for GearioTransport<F> {
         // and again into the socket, and that second copy is proportional to
         // the response: at 16 KB it showed up as the whole remaining gap
         // against tokio, at 1 KB as nothing.
-        match self.io.get_ref().try_write_vectored(&[io::IoSlice::new(buf)]) {
+        match self
+            .io
+            .get_ref()
+            .try_write_vectored(&[io::IoSlice::new(buf)])
+        {
             Ok(0) => {}
             Ok(n) => return Poll::Ready(Ok(n)),
             Err(e) => return Poll::Ready(Err(e)),
@@ -310,7 +352,6 @@ impl<F: Filter> Write for GearioTransport<F> {
         self.shutting_down.set(true);
         self.io.poll_shutdown(cx)
     }
-
 }
 
 impl<F> GearioTransport<F> {

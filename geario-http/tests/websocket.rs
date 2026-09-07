@@ -24,7 +24,10 @@ fn echo_server() -> String {
         let key = req
             .lines()
             .find_map(|l| l.strip_prefix("Sec-WebSocket-Key: "))
-            .or_else(|| req.lines().find_map(|l| l.strip_prefix("sec-websocket-key: ")))
+            .or_else(|| {
+                req.lines()
+                    .find_map(|l| l.strip_prefix("sec-websocket-key: "))
+            })
             .unwrap_or("")
             .trim()
             .to_owned();

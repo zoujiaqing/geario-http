@@ -1,14 +1,14 @@
 //! WebSocket protocol related errors.
 use std::io;
 
-use crate::error::{DecodeError, EncodeError, HttpError, ResponseError};
 use crate::Response;
 use crate::StatusCode;
+use crate::error::{DecodeError, EncodeError, HttpError, ResponseError};
 use crate::header::ALLOW;
 use crate::header::HeaderValue;
 use geario::net::connect::ConnectError;
-use geario::util::future::Either;
 use geario::util::clone_io_error;
+use geario::util::future::Either;
 
 use super::OpCode;
 

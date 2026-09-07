@@ -179,7 +179,10 @@ mod tests {
         assert_eq!(UTF_8.name(), request(&[]).encoding().unwrap().name());
         assert_eq!(
             UTF_8.name(),
-            with_content_type("application/json").encoding().unwrap().name()
+            with_content_type("application/json")
+                .encoding()
+                .unwrap()
+                .name()
         );
         assert_eq!(
             ISO_8859_2,

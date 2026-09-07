@@ -22,10 +22,11 @@ fn serve() -> std::net::SocketAddr {
 
     geario::rt::spawn(async move {
         let accepted = geario::rt::spawn_blocking(move || lst.accept()).await;
-        let Ok(Ok((stream, _))) = accepted else { return };
+        let Ok(Ok((stream, _))) = accepted else {
+            return;
+        };
         stream.set_nonblocking(true).ok();
-        let Ok(io) = geario::net::from_tcp_stream(stream, SharedCfg::new("H2-SRV").into())
-        else {
+        let Ok(io) = geario::net::from_tcp_stream(stream, SharedCfg::new("H2-SRV").into()) else {
             return;
         };
         let _ = hyper::server::conn::http2::Builder::new(GearioExecutor)
@@ -125,8 +126,15 @@ async fn concurrent_streams_on_one_connection() {
     for (i, task) in pending.into_iter().enumerate() {
         let (path, body) = task.await.expect("stream");
         let i = u8::try_from(i).unwrap();
-        assert_eq!(path, format!("/s{i}"), "a response landed on the wrong stream");
+        assert_eq!(
+            path,
+            format!("/s{i}"),
+            "a response landed on the wrong stream"
+        );
         assert_eq!(body.len(), 40_000);
-        assert!(body.iter().all(|b| *b == i), "stream {i} got another stream's bytes");
+        assert!(
+            body.iter().all(|b| *b == i),
+            "stream {i} got another stream's bytes"
+        );
     }
 }

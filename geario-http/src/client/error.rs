@@ -3,7 +3,6 @@ use std::{error::Error as StdError, io, ops::Deref, rc::Rc};
 
 use serde_json::error::Error as JsonError;
 
-
 use crate::error::{DecodeError, EncodeError, HttpError, PayloadError};
 use geario::error::ErrorDiagnostic;
 use geario::util::clone_io_error;
@@ -153,7 +152,6 @@ impl Clone for ConnectError {
     }
 }
 
-
 impl From<geario::net::connect::ConnectError> for ConnectError {
     fn from(err: geario::net::connect::ConnectError) -> ConnectError {
         match err {
@@ -165,7 +163,6 @@ impl From<geario::net::connect::ConnectError> for ConnectError {
         }
     }
 }
-
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 pub enum InvalidUrl {

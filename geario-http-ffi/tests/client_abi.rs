@@ -22,7 +22,10 @@ fn options_init_fills_defaults() {
     let opts = default_options();
     assert_eq!(opts.abi_version, geario_http_abi_version());
     assert_eq!(opts.flags, 0);
-    assert_ne!(opts.max_inflight_requests, 0, "a zero ceiling would block everything");
+    assert_ne!(
+        opts.max_inflight_requests, 0,
+        "a zero ceiling would block everything"
+    );
 }
 
 #[test]
@@ -68,7 +71,10 @@ fn null_arguments_are_rejected() {
         GEARIO_HTTP_STATUS_INVALID_ARG
     );
     // Counters answer for a NULL client instead of faulting.
-    assert_eq!(unsafe { geario_http_client_inflight_count(std::ptr::null_mut()) }, 0);
+    assert_eq!(
+        unsafe { geario_http_client_inflight_count(std::ptr::null_mut()) },
+        0
+    );
     assert_eq!(
         unsafe { geario_http_client_paused_stream_count(std::ptr::null_mut()) },
         0
@@ -153,7 +159,15 @@ fn a_closed_client_refuses_new_work() {
     req.url.len = url.len();
     let mut id = 0u64;
     let st = unsafe {
-        geario_http_client_send(client, &req, None, None, None, std::ptr::null_mut(), &mut id)
+        geario_http_client_send(
+            client,
+            &req,
+            None,
+            None,
+            None,
+            std::ptr::null_mut(),
+            &mut id,
+        )
     };
     assert_eq!(st, GEARIO_HTTP_STATUS_CLOSED);
 
@@ -199,7 +213,7 @@ fn a_proxy_url_that_cannot_be_honoured_is_refused() {
     // Ignoring it would connect direct, which is the one outcome the caller
     // did not ask for.
     for bad in [
-        &b"https://proxy.example"[..],   // TLS to the proxy is another shape
+        &b"https://proxy.example"[..], // TLS to the proxy is another shape
         &b"http://user:pass@proxy.example"[..], // credentials would be dropped
         &b"socks5://proxy.example"[..],
         &b"not a url"[..],

@@ -23,9 +23,9 @@ pub mod error;
 pub mod h1;
 #[cfg(feature = "hyper-rt")]
 pub mod hyper_rt;
+pub mod types;
 #[cfg(feature = "ws")]
 pub mod ws;
-pub mod types;
 
 pub use self::config::{DateService, HttpServiceConfig, KeepAlive};
 pub use self::error::ResponseError;
