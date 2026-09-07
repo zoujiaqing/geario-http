@@ -856,10 +856,14 @@ mod tests {
         use crate::header::{COOKIE, SET_COOKIE};
         use crate::httpmessage::HttpMessage;
 
-        let req = crate::test::TestRequest::default()
-            .header(COOKIE, "cookie1=value1")
-            .header(COOKIE, "cookie2=value2")
-            .finish();
+        // Built directly rather than through a TestRequest builder from a
+        // test server that was never ported, which is why this never
+        // compiled.
+        let mut req = crate::request::Request::default();
+        req.headers_mut()
+            .insert(COOKIE, HeaderValue::from_static("cookie1=value1"));
+        req.headers_mut()
+            .append(COOKIE, HeaderValue::from_static("cookie2=value2"));
         let cookies = req.cookies().unwrap();
 
         let resp = Response::Ok()
@@ -868,7 +872,7 @@ mod tests {
                     .domain("www.rust-lang.org")
                     .path("/test")
                     .http_only(true)
-                    .max_age(time::Duration::days(1)),
+                    .max_age(coo_kie::time::Duration::days(1)),
             )
             .del_cookie(&cookies[0])
             .finish();

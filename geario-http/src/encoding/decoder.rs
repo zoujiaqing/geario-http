@@ -5,8 +5,8 @@ use flate2::write::{GzDecoder, ZlibDecoder};
 use super::Writer;
 use crate::error::PayloadError;
 use crate::header::{CONTENT_ENCODING, ContentEncoding, HeaderMap};
-use geario::rt::{BlockingResult, spawn_blocking};
 use geario::bytes::Bytes;
+use geario::rt::{BlockingResult, spawn_blocking};
 use geario::util::future::Stream;
 
 const INPLACE: usize = 2049;

@@ -4,10 +4,22 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Flaky tests only show up over repeated runs, and repeating a run has to
+  # not require an empty commit.
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   test:
-    runs-on: macos-latest
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -18,27 +30,103 @@ jobs:
           repository: zoujiaqing/geario
           path: geario
       - uses: dtolnay/rust-toolchain@stable
-
-      # Every feature combination has to build. A feature that only compiles
-      # when another happens to be on is a trap for whoever turns it on next.
-      - name: check feature combinations
-        working-directory: geario-http
-        run: |
-          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie" \
-                   "full,rustls" "full,ws" "full,ws,rustls,compress,cookie"; do
-            echo "--- features: ${f:-default} ---"
-            if [ -z "$f" ]; then
-              cargo check -p geario-http
-            else
-              cargo check -p geario-http --no-default-features --features "$f"
-            fi
-          done
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: geario-http
 
       - name: test
         working-directory: geario-http
-        run: cargo test --features full,ws,compress,cookie
+        run: cargo test --workspace --features "geario-http/full,geario-http/rustls,geario-http/hyper-full"
 
-      - name: ffi C examples
+  # The io_uring driver had a bug that only a full-duplex transfer over a
+  # real socket found, and it was in this crate's tests that it showed up.
+  # Naming the driver is the only way to be sure which one ran: Linux picks
+  # io_uring when it can and falls back to polling.
+  drivers:
+    name: driver (${{ matrix.driver }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        driver: [neon-polling, neon-uring]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: geario-http
+
+      # A ring pins memory and the harness runs one runtime per thread.
+      - name: test with the driver forced
+        working-directory: geario-http
+        run: |
+          ulimit -l unlimited 2>/dev/null || ulimit -l 1048576 2>/dev/null || true
+          cargo test -p geario-http \
+            --features "full,rustls,hyper-full,geario/${{ matrix.driver }}"
+
+  features:
+    name: feature combinations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: geario-http
+
+      # Every feature combination has to build. A feature that only compiles
+      # when another happens to be on is a trap for whoever turns it on next.
+      - name: check
+        working-directory: geario-http
+        run: |
+          set -e
+          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie" \
+                   "full,rustls" "full,ws" "full,ws,rustls,compress,cookie" \
+                   "hyper-rt" "hyper-http1,hyper-server" "hyper-http2,hyper-client" \
+                   "hyper-full" "full,rustls,hyper-full"; do
+            echo "--- features: ${f:-default} ---"
+            if [ -z "$f" ]; then
+              cargo check -p geario-http --all-targets
+            else
+              cargo check -p geario-http --all-targets --no-default-features --features "$f"
+            fi
+          done
+
+  ffi:
+    name: ffi C examples (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: geario-http
+
+      # The ABI is the deliverable, so it is exercised from C rather than
+      # only from Rust.
+      - name: build and run
         working-directory: geario-http
         run: |
           cargo build -p geario-http-ffi --release
@@ -46,3 +134,21 @@ jobs:
           ./geario-http-ffi/examples/version
           ./geario-http-ffi/examples/roundtrip
           ./geario-http-ffi/examples/streaming_client
+
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      # The workspace has a path dependency on geario, so cargo cannot even
+      # load it without the sibling checkout.
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - working-directory: geario-http
+        run: cargo fmt --all --check

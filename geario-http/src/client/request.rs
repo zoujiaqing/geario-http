@@ -484,8 +484,7 @@ impl ClientRequest {
                 let mut cookie = String::new();
                 for c in jar.delta() {
                     let name = percent_encode(c.name().as_bytes(), crate::helpers::USERINFO);
-                    let value =
-                        percent_encode(c.value().as_bytes(), crate::helpers::USERINFO);
+                    let value = percent_encode(c.value().as_bytes(), crate::helpers::USERINFO);
                     let _ = write!(cookie, "; {name}={value}");
                 }
                 self.request.head.headers.insert(

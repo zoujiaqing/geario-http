@@ -1,4 +1,4 @@
-use std::ffi::{c_void, CString};
+use std::ffi::{CString, c_void};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
 
@@ -25,9 +25,8 @@ extern "C" fn on_request(_user: *mut c_void, req: *const GearioHttpRequest) {
 #[test]
 fn start_then_stop_returns() {
     let host = CString::new("127.0.0.1").unwrap();
-    let srv = unsafe {
-        geario_http_server_start(host.as_ptr(), 8123, on_request, std::ptr::null_mut())
-    };
+    let srv =
+        unsafe { geario_http_server_start(host.as_ptr(), 8123, on_request, std::ptr::null_mut()) };
     assert!(!srv.is_null(), "server did not start");
 
     // Prove it is actually serving before testing shutdown.
@@ -66,9 +65,8 @@ fn does_not_steal_host_signal_handlers() {
     assert_ne!(previous, usize::MAX, "could not install the test handler");
 
     let host = CString::new("127.0.0.1").unwrap();
-    let srv = unsafe {
-        geario_http_server_start(host.as_ptr(), 8124, on_request, std::ptr::null_mut())
-    };
+    let srv =
+        unsafe { geario_http_server_start(host.as_ptr(), 8124, on_request, std::ptr::null_mut()) };
     assert!(!srv.is_null());
 
     // Read back who owns SIGINT now, then put things back as they were.
@@ -156,14 +154,18 @@ mod body {
         unsafe { geario_http_server_stop(srv) };
 
         assert_eq!(String::from_utf8_lossy(&status.stdout), "413");
-        assert!(!*CALLED.lock().unwrap(), "the handler ran on an oversized body");
+        assert!(
+            !*CALLED.lock().unwrap(),
+            "the handler ran on an oversized body"
+        );
     }
 
     #[test]
     fn the_request_body_reaches_the_handler_and_comes_back() {
         let host = CString::new("127.0.0.1").unwrap();
-        let srv =
-            unsafe { geario_http_server_start(host.as_ptr(), 8126, echo_body, std::ptr::null_mut()) };
+        let srv = unsafe {
+            geario_http_server_start(host.as_ptr(), 8126, echo_body, std::ptr::null_mut())
+        };
         assert!(!srv.is_null(), "server did not start");
 
         // Long enough to arrive in more than one chunk, so a handler that

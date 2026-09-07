@@ -95,3 +95,12 @@ geario = { workspace = true }
 rand = { workspace = true }
 env_logger = { workspace = true }
 futures-util = { workspace = true }
+
+[[example]]
+name = "hello"
+required-features = ["server"]
+
+# Drives the client against the server, so it needs both roles.
+[[example]]
+name = "roundtrip"
+required-features = ["server", "client"]

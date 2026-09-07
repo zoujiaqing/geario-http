@@ -1,9 +1,9 @@
 #![allow(clippy::unused_async)]
 use std::rc::Rc;
 
+use crate::ws;
 use geario::io::IoRef;
 use geario::io::OnDisconnect;
-use crate::ws;
 
 #[derive(Clone, Debug)]
 pub struct WsSink(Rc<WsSinkInner>);

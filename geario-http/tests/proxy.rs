@@ -54,7 +54,9 @@ async fn plaintext_goes_through_the_proxy_in_absolute_form() {
 
     assert_eq!(res.status().as_u16(), 200);
 
-    let line = seen.recv_timeout(std::time::Duration::from_secs(5)).unwrap();
+    let line = seen
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .unwrap();
     assert!(
         line.starts_with("GET http://example.invalid/some/path?q=1 "),
         "request line was not absolute-form: {line:?}"

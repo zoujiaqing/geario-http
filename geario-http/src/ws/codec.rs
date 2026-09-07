@@ -1,7 +1,7 @@
 use std::cell::Cell;
 
-use geario::codec::{Decoder, Encoder};
 use geario::bytes::{BytePage, BytePages, ByteString, Bytes, BytesMut};
+use geario::codec::{Decoder, Encoder};
 
 use super::error::ProtocolError;
 use super::frame::Parser;

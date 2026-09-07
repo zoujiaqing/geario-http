@@ -3,12 +3,12 @@ use std::{fmt, future::Future, io, io::Write, pin::Pin, rc::Rc, task::Context, t
 
 use flate2::write::{GzEncoder, ZlibEncoder};
 
-use crate::body::{Body, BodySize, MessageBody, ResponseBody};
-use crate::header::{CONTENT_ENCODING, ContentEncoding, HeaderValue};
 use crate::ResponseHead;
 use crate::StatusCode;
-use geario::rt::{BlockingResult, spawn_blocking};
+use crate::body::{Body, BodySize, MessageBody, ResponseBody};
+use crate::header::{CONTENT_ENCODING, ContentEncoding, HeaderValue};
 use geario::bytes::Bytes;
+use geario::rt::{BlockingResult, spawn_blocking};
 use geario::util::dyn_rc_err;
 
 use super::Writer;

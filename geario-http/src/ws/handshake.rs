@@ -1,10 +1,10 @@
 //! Websockets protocol helpers
 use crate::Method;
-use crate::StatusCode;
-use crate::header;
 use crate::RequestHead;
 use crate::Response;
 use crate::ResponseBuilder;
+use crate::StatusCode;
+use crate::header;
 
 use super::error::HandshakeError;
 
@@ -123,10 +123,7 @@ mod tests {
         // Each case adds the part the previous one was missing, so the
         // sequence walks the whole validation rather than one branch of it.
         let cases: Vec<(Request, HandshakeError)> = vec![
-            (
-                head(Method::POST, &[]),
-                HandshakeError::GetMethodRequired,
-            ),
+            (head(Method::POST, &[]), HandshakeError::GetMethodRequired),
             (get(&[]), HandshakeError::NoWebsocketUpgrade),
             (
                 get(&[(header::UPGRADE, "test")]),

@@ -1,7 +1,6 @@
 //! Websockets client
 use std::{fmt, marker};
 
-
 #[cfg(feature = "rustls")]
 use geario::tls::rustls::{TlsClientFilter, TlsConnector};
 #[cfg(feature = "rustls")]
@@ -10,26 +9,26 @@ use tls_rustls::ClientConfig as RustlsClientConfig;
 use base64::{Engine, engine::general_purpose::STANDARD as base64};
 use nanorand::{Rng, WyRand};
 
-use crate::client::{ClientCodec, ClientConfig, ClientRawRequest, ClientResponse};
-use geario::net::connect::{Connect, ConnectError, Connector};
-use geario::error::{Error, ErrorMapping};
-use crate::header::{self, HeaderValue};
 use crate::ConnectionType;
-use crate::message::Message;
 use crate::Method;
 use crate::RequestHead;
 use crate::StatusCode;
 use crate::Uri;
 use crate::body::BodySize;
+use crate::client::{ClientCodec, ClientConfig, ClientRawRequest, ClientResponse};
 use crate::error::HttpError;
+use crate::header::{self, HeaderValue};
+use crate::message::Message;
+use crate::ws;
+use geario::error::{Error, ErrorMapping};
 use geario::io::{Base, DispatchItem, Dispatcher, Filter, Io, Layer, Reason, Sealed};
-use geario::service::{IntoService, Pipeline, apply_fn, fn_service};
-use geario::service::cfg::Cfg;
+use geario::net::connect::{Connect, ConnectError, Connector};
 use geario::service::Service;
+use geario::service::cfg::Cfg;
 use geario::service::cfg::SharedCfg;
+use geario::service::{IntoService, Pipeline, apply_fn, fn_service};
 use geario::util::channel::mpsc;
 use geario::util::time::timeout;
-use crate::ws;
 
 use super::error::{WsClientError, WsConfigError, WsError};
 use super::{WsClientConfig, transport::WsTransport};
@@ -100,7 +99,6 @@ impl<F> WsClient<F> {
         }
     }
 
-
     #[cfg(feature = "rustls")]
     /// Use rustls connector.
     pub fn rustls(
@@ -147,8 +145,7 @@ where
                 let mut cookie = String::new();
                 for c in jar.delta() {
                     let name = percent_encode(c.name().as_bytes(), crate::helpers::USERINFO);
-                    let value =
-                        percent_encode(c.value().as_bytes(), crate::helpers::USERINFO);
+                    let value = percent_encode(c.value().as_bytes(), crate::helpers::USERINFO);
                     let _ = write!(cookie, "; {name}={value}");
                 }
                 head.headers.insert(

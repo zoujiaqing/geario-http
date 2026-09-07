@@ -137,11 +137,7 @@ unsafe impl Send for Callbacks {}
 unsafe fn write_prefix<T>(dst: *mut T, value: T, struct_size: u32) {
     let n = std::cmp::min(struct_size as usize, std::mem::size_of::<T>());
     unsafe {
-        std::ptr::copy_nonoverlapping(
-            std::ptr::addr_of!(value).cast::<u8>(),
-            dst.cast::<u8>(),
-            n,
-        );
+        std::ptr::copy_nonoverlapping(std::ptr::addr_of!(value).cast::<u8>(), dst.cast::<u8>(), n);
     }
     std::mem::forget(value);
 }
@@ -250,7 +246,11 @@ pub unsafe extern "C" fn geario_http_client_new(
     // which is exactly what the init functions are careful to avoid writing.
     let raw_abi = unsafe { std::ptr::read_unaligned(opts.cast::<u32>()) };
     let raw_size = unsafe {
-        std::ptr::read_unaligned(opts.cast::<u8>().add(std::mem::size_of::<u32>()).cast::<u32>())
+        std::ptr::read_unaligned(
+            opts.cast::<u8>()
+                .add(std::mem::size_of::<u32>())
+                .cast::<u32>(),
+        )
     };
     let st = validate_header(raw_abi, raw_size, GEARIO_HTTP_CLIENT_OPTIONS_MIN_SIZE);
     if st != GEARIO_HTTP_STATUS_OK {
@@ -263,8 +263,7 @@ pub unsafe extern "C" fn geario_http_client_new(
         let proxy = if o.proxy_url.is_null() || o.proxy_url_len == 0 {
             None
         } else {
-            let raw =
-                unsafe { std::slice::from_raw_parts(o.proxy_url, o.proxy_url_len) };
+            let raw = unsafe { std::slice::from_raw_parts(o.proxy_url, o.proxy_url_len) };
             match std::str::from_utf8(raw).ok().map(ProxyTarget::parse) {
                 Some(Ok(p)) => Some(p),
                 // A proxy that cannot be honoured is refused rather than
@@ -282,9 +281,7 @@ pub unsafe extern "C" fn geario_http_client_new(
             proxy,
         )
     } else {
-        let flags = unsafe {
-            std::ptr::read_unaligned(opts.cast::<u8>().add(8).cast::<u64>())
-        };
+        let flags = unsafe { std::ptr::read_unaligned(opts.cast::<u8>().add(8).cast::<u64>()) };
         (10_000, 60_000, DEFAULT_MAX_INFLIGHT, 2, flags, None)
     };
 
@@ -322,8 +319,7 @@ pub unsafe extern "C" fn geario_http_client_new(
                     if let Some(p) = proxy {
                         builder = builder.proxy(p);
                     }
-                    let client =
-                        builder.build(geario::service::cfg::SharedCfg::new("ffi-client"));
+                    let client = builder.build(geario::service::cfg::SharedCfg::new("ffi-client"));
                     let _ = (connect_ms, request_ms);
                     let _ = ready_tx.send(true);
 
@@ -431,7 +427,8 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         let sent = if body.is_empty() {
             req.send().await
         } else {
-            req.send_body(geario::bytes::Bytes::from(body.clone())).await
+            req.send_body(geario::bytes::Bytes::from(body.clone()))
+                .await
         };
         match sent {
             Ok(r) => {
@@ -503,7 +500,9 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         if chunk.is_empty() {
             continue;
         }
-        let Some(on_chunk) = cbs.on_chunk else { continue };
+        let Some(on_chunk) = cbs.on_chunk else {
+            continue;
+        };
 
         match on_chunk(cbs.user_data, id, chunk.as_ptr(), chunk.len()) {
             GEARIO_HTTP_CHUNK_CANCEL => {
@@ -591,8 +590,7 @@ pub unsafe extern "C" fn geario_http_client_send(
     //
     // Refusing rather than queueing also keeps it meaningful: an unbounded
     // queue just moves the pressure somewhere the host cannot see.
-    if c
-        .inflight
+    if c.inflight
         .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
             (n < c.max_inflight).then_some(n + 1)
         })
@@ -604,7 +602,10 @@ pub unsafe extern "C" fn geario_http_client_send(
     let raw_abi = unsafe { std::ptr::read_unaligned(request.cast::<u32>()) };
     let raw_size = unsafe {
         std::ptr::read_unaligned(
-            request.cast::<u8>().add(std::mem::size_of::<u32>()).cast::<u32>(),
+            request
+                .cast::<u8>()
+                .add(std::mem::size_of::<u32>())
+                .cast::<u32>(),
         )
     };
     let st = validate_header(raw_abi, raw_size, GEARIO_HTTP_CLIENT_REQUEST_MIN_SIZE);
@@ -721,9 +722,7 @@ pub unsafe extern "C" fn geario_http_client_cancel(
 ///
 /// `client` must be NULL or come from `geario_http_client_new`.
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn geario_http_client_inflight_count(
-    client: *mut GearioHttpClient,
-) -> u32 {
+pub unsafe extern "C" fn geario_http_client_inflight_count(client: *mut GearioHttpClient) -> u32 {
     if client.is_null() {
         return 0;
     }

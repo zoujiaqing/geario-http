@@ -5,3 +5,10 @@ geario-http-ffi/examples/version
 # Cross-compilation linkers are a property of the machine, not the project:
 # naming a linker for the host target here breaks a native build on it.
 .cargo/
+
+# The C examples are build output; the Makefile names them all.
+/geario-http-ffi/examples/version
+/geario-http-ffi/examples/server
+/geario-http-ffi/examples/stream
+/geario-http-ffi/examples/roundtrip
+/geario-http-ffi/examples/streaming_client

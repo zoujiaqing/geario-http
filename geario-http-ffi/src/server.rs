@@ -6,9 +6,9 @@ use std::sync::mpsc;
 
 use geario::bytes::Bytes;
 use geario::service::cfg::SharedCfg;
-use geario_http::{HttpService, Request, Response, StatusCode};
 use geario_http::body::BodyStream;
 use geario_http::header::{HeaderName, HeaderValue};
+use geario_http::{HttpService, Request, Response, StatusCode};
 
 use crate::abi::*;
 use crate::responder::{self, Reply};
@@ -148,9 +148,7 @@ pub unsafe extern "C" fn geario_http_server_start(
                     // An embedded library has no business taking the host's
                     // signals. Without this, geario installs its own SIGINT
                     // handler and the host's never runs.
-                    let srv = match geario::server::net::build()
-                        .disable_signals()
-                        .bind(
+                    let srv = match geario::server::net::build().disable_signals().bind(
                         "ffi",
                         addr,
                         SharedCfg::new("FFI"),
@@ -267,7 +265,9 @@ impl futures_core::Stream for OkStream {
         mut self: std::pin::Pin<&mut Self>,
         cx: &mut std::task::Context<'_>,
     ) -> std::task::Poll<Option<Self::Item>> {
-        std::pin::Pin::new(&mut self.0).poll_next(cx).map(|o| o.map(Ok))
+        std::pin::Pin::new(&mut self.0)
+            .poll_next(cx)
+            .map(|o| o.map(Ok))
     }
 }
 
@@ -294,9 +294,7 @@ fn build_response(reply: Reply) -> Response {
             status,
             headers,
             chunks,
-        } => {
-            apply_head(status, headers).body(BodyStream::new(OkStream(chunks)))
-        }
+        } => apply_head(status, headers).body(BodyStream::new(OkStream(chunks))),
     }
 }
 
