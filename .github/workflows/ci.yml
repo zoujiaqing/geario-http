@@ -139,7 +139,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: geario-http
+      # The workspace has a path dependency on geario, so cargo cannot even
+      # load it without the sibling checkout.
+      - uses: actions/checkout@v4
+        with:
+          repository: zoujiaqing/geario
+          path: geario
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: cargo fmt --all --check
+      - working-directory: geario-http
+        run: cargo fmt --all --check
