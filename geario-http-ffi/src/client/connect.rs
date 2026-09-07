@@ -79,6 +79,8 @@ impl Origin {
 pub(crate) enum Sender {
     H1(http1::SendRequest<Full<Bytes>>),
     H2(http2::SendRequest<Full<Bytes>>),
+    /// A lease whose h1 sender has been taken back out. Never sent on.
+    Gone,
 }
 
 /// TLS settings shared by every connection a client opens.
@@ -371,6 +373,7 @@ mod tests {
         match sender {
             Sender::H1(s) => s.send_request(req).await.unwrap(),
             Sender::H2(s) => s.send_request(req).await.unwrap(),
+            Sender::Gone => unreachable!(),
         }
     }
 

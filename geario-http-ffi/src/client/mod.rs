@@ -12,6 +12,7 @@ use geario_http::client::Client;
 use geario_http::client::proxy::ProxyTarget;
 
 mod connect;
+mod pool;
 
 use crate::abi::*;
 use crate::slice::{GearioHttpError, GearioHttpHeader, GearioHttpSlice};
