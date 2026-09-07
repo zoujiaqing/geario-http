@@ -10,9 +10,11 @@
 use std::sync::Arc;
 
 use geario::io::types::HttpProtocol;
+use geario::io::{Filter, Io};
 use geario::net::connect::{Connect, ConnectError, connect as tcp};
 use geario::tls::rustls::TlsClientFilter;
 use geario::util::time::{Millis, timeout_checked};
+use geario_http::client::proxy::ProxyTarget;
 use geario_http::hyper_rt::{GearioExecutor, GearioTimer, GearioTransport};
 use http_body_util::Full;
 use hyper::body::Bytes;
@@ -125,13 +127,12 @@ impl Tls {
         let mut config = ClientConfig::builder()
             .with_root_certificates(roots)
             .with_no_client_auth();
-        // Offering only h2 makes a peer that cannot do h2 fail the handshake,
-        // which is what HTTP2_REQUIRED means: fail, never silently downgrade.
-        config.alpn_protocols = if require_h2 {
-            vec![b"h2".to_vec()]
-        } else {
-            vec![b"h2".to_vec(), b"http/1.1".to_vec()]
-        };
+        // Both are always offered. HTTP2_REQUIRED is enforced after the
+        // handshake by checking what was negotiated, which fails
+        // deterministically rather than depending on the server to abort with
+        // a no-protocol alert -- a race the client can lose with a broken pipe
+        // instead of a clear reason. Either way it is fail, never downgrade.
+        config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
         Ok(Tls {
             config: Arc::new(config),
             require_h2,
@@ -146,9 +147,10 @@ impl Tls {
 pub(crate) async fn connect(
     origin: &Origin,
     tls: Option<&Tls>,
+    proxy: Option<&ProxyTarget>,
     connect_timeout: Millis,
 ) -> Result<Sender, Fail> {
-    match timeout_checked(connect_timeout, open(origin, tls)).await {
+    match timeout_checked(connect_timeout, open(origin, tls, proxy)).await {
         Ok(result) => result,
         Err(()) => Err(Fail::new(
             GEARIO_HTTP_ERR_TIMEOUT,
@@ -157,14 +159,33 @@ pub(crate) async fn connect(
     }
 }
 
-async fn open(origin: &Origin, tls: Option<&Tls>) -> Result<Sender, Fail> {
-    let io = tcp(Connect::new(origin.host.clone()).set_port(origin.port))
-        .await
-        .map_err(|e| classify_connect(&e))?;
+async fn open(
+    origin: &Origin,
+    tls: Option<&Tls>,
+    proxy: Option<&ProxyTarget>,
+) -> Result<Sender, Fail> {
+    // Through a proxy the socket goes to the proxy, not the origin. A
+    // plaintext request then carries the whole URL in its request line (the
+    // caller writes it in absolute-form); a TLS request opens a CONNECT
+    // tunnel to the origin first and runs the handshake inside it.
+    let io = match proxy {
+        Some(p) => tcp(Connect::new(p.host.clone()).set_port(p.port))
+            .await
+            .map_err(|e| classify_connect(&e))?,
+        None => tcp(Connect::new(origin.host.clone()).set_port(origin.port))
+            .await
+            .map_err(|e| classify_connect(&e))?,
+    };
 
     if !origin.tls {
+        // Plaintext, direct or proxied, is HTTP/1.1.
         return handshake_h1(io).await;
     }
+
+    let io = match proxy {
+        Some(_) => tunnel(io, &origin.host, origin.port).await?,
+        None => io,
+    };
     let Some(tls) = tls else {
         return Err(Fail::new(
             GEARIO_HTTP_ERR_UNSUPPORTED,
@@ -216,6 +237,75 @@ async fn handshake_h1<F: geario::io::Filter + Unpin>(
         let _ = conn.await;
     });
     Ok(Sender::H1(sender))
+}
+
+/// Open a CONNECT tunnel through the proxy to `host:port`.
+///
+/// The proxy answers with a status line and headers; a 2xx means the tunnel
+/// is up and everything after it is end to end. Anything else is the proxy
+/// refusing, which is a connect failure from the caller's point of view.
+async fn tunnel<F: Filter>(io: Io<F>, host: &str, port: u16) -> Result<Io<F>, Fail> {
+    let request = format!("CONNECT {host}:{port} HTTP/1.1\r\nHost: {host}:{port}\r\n\r\n");
+    io.get_ref()
+        .with_write_buf(|buf| buf.extend_from_slice(request.as_bytes()))
+        .map_err(|e| Fail::new(GEARIO_HTTP_ERR_CONNECT, format!("proxy write: {e}")))?;
+    io.flush(true)
+        .await
+        .map_err(|e| Fail::new(GEARIO_HTTP_ERR_CONNECT, format!("proxy write: {e}")))?;
+
+    // Read the proxy's response head. It is small and ends at the first blank
+    // line; the body, if any, belongs to the error case and is not tunnelled.
+    loop {
+        let done = io.get_ref().with_read_buf(|buf| {
+            if let Some(end) = find_headers_end(buf) {
+                let head = buf.split_to(end + 4);
+                Some(head)
+            } else {
+                None
+            }
+        });
+        match done {
+            Some(head) => return check_tunnel(io, &head),
+            None => {
+                if io
+                    .read_ready()
+                    .await
+                    .map_err(|e| Fail::new(GEARIO_HTTP_ERR_CONNECT, format!("proxy read: {e}")))?
+                    .is_none()
+                {
+                    return Err(Fail::new(
+                        GEARIO_HTTP_ERR_CONNECT,
+                        "proxy closed before answering CONNECT",
+                    ));
+                }
+            }
+        }
+    }
+}
+
+fn find_headers_end(buf: &[u8]) -> Option<usize> {
+    buf.windows(4).position(|w| w == b"\r\n\r\n")
+}
+
+fn check_tunnel<F: Filter>(io: Io<F>, head: &[u8]) -> Result<Io<F>, Fail> {
+    // `HTTP/1.1 200 ...`: the status is the second token of the first line.
+    let status = head
+        .split(|b| *b == b'\n')
+        .next()
+        .and_then(|line| line.split(|b| *b == b' ').nth(1))
+        .and_then(|code| std::str::from_utf8(code).ok())
+        .and_then(|code| code.parse::<u16>().ok());
+    match status {
+        Some(200..=299) => Ok(io),
+        Some(code) => Err(Fail::new(
+            GEARIO_HTTP_ERR_CONNECT,
+            format!("proxy refused CONNECT with status {code}"),
+        )),
+        None => Err(Fail::new(
+            GEARIO_HTTP_ERR_CONNECT,
+            "proxy sent a malformed response to CONNECT",
+        )),
+    }
 }
 
 fn classify_connect(e: &geario::error::Error<ConnectError>) -> Fail {
@@ -380,7 +470,7 @@ mod tests {
     #[geario::test]
     async fn plaintext_is_http1() {
         let port = plaintext_server();
-        let mut s = connect(&origin(false, port), None, Millis(5_000))
+        let mut s = connect(&origin(false, port), None, None, Millis(5_000))
             .await
             .unwrap();
         assert!(matches!(s, Sender::H1(_)));
@@ -393,7 +483,7 @@ mod tests {
         let pki = issue("localhost");
         let port = tls_server(&pki, &[b"h2", b"http/1.1"]);
         let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, false).unwrap();
-        let mut s = connect(&origin(true, port), Some(&tls), Millis(5_000))
+        let mut s = connect(&origin(true, port), Some(&tls), None, Millis(5_000))
             .await
             .unwrap();
         assert!(matches!(s, Sender::H2(_)));
@@ -410,14 +500,14 @@ mod tests {
         let pki = issue("localhost");
         let port = tls_server(&pki, &[b"http/1.1"]);
         let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, false).unwrap();
-        let s = connect(&origin(true, port), Some(&tls), Millis(5_000))
+        let s = connect(&origin(true, port), Some(&tls), None, Millis(5_000))
             .await
             .unwrap();
         assert!(matches!(s, Sender::H1(_)));
 
         let port = tls_server(&pki, &[b"http/1.1"]);
         let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, true).unwrap();
-        let err = connect(&origin(true, port), Some(&tls), Millis(5_000))
+        let err = connect(&origin(true, port), Some(&tls), None, Millis(5_000))
             .await
             .err()
             .unwrap();
@@ -430,7 +520,7 @@ mod tests {
         let unrelated = issue("localhost");
         let port = tls_server(&pki, &[b"h2"]);
         let tls = Tls::new(Some(unrelated.ca_pem.as_bytes()), true, false).unwrap();
-        let err = connect(&origin(true, port), Some(&tls), Millis(5_000))
+        let err = connect(&origin(true, port), Some(&tls), None, Millis(5_000))
             .await
             .err()
             .unwrap();
@@ -444,7 +534,10 @@ mod tests {
         let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, false).unwrap();
         let mut o = origin(true, port);
         o.host = "127.0.0.1".into();
-        let err = connect(&o, Some(&tls), Millis(5_000)).await.err().unwrap();
+        let err = connect(&o, Some(&tls), None, Millis(5_000))
+            .await
+            .err()
+            .unwrap();
         assert_eq!(err.kind, GEARIO_HTTP_ERR_TLS_HOSTNAME, "{}", err.message);
     }
 
@@ -455,7 +548,7 @@ mod tests {
     async fn a_name_that_does_not_resolve_is_dns() {
         let mut o = origin(false, 80);
         o.host = format!("{}.invalid", "a".repeat(70));
-        let err = connect(&o, None, Millis(5_000)).await.err().unwrap();
+        let err = connect(&o, None, None, Millis(5_000)).await.err().unwrap();
         assert_eq!(err.kind, GEARIO_HTTP_ERR_DNS, "{}", err.message);
     }
 
@@ -466,7 +559,7 @@ mod tests {
             .local_addr()
             .unwrap()
             .port();
-        let err = connect(&origin(false, port), None, Millis(5_000))
+        let err = connect(&origin(false, port), None, None, Millis(5_000))
             .await
             .err()
             .unwrap();
@@ -486,7 +579,7 @@ mod tests {
         });
         let pki = issue("localhost");
         let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, false).unwrap();
-        let err = connect(&origin(true, port), Some(&tls), Millis(200))
+        let err = connect(&origin(true, port), Some(&tls), None, Millis(200))
             .await
             .err()
             .unwrap();
@@ -499,6 +592,107 @@ mod tests {
             .err()
             .unwrap();
         assert_eq!(err.kind, GEARIO_HTTP_ERR_TLS_CA);
+    }
+
+    /// A plaintext request through a proxy connects to the proxy and puts the
+    /// whole URL in the request line. This stands in for a proxy: it accepts,
+    /// checks the first line is absolute-form, and answers 200.
+    #[geario::test]
+    async fn a_plaintext_request_through_a_proxy_is_absolute_form() {
+        use std::io::{Read, Write};
+
+        let lst = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy_port = lst.local_addr().unwrap().port();
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(String::new()));
+        let recorder = seen.clone();
+        std::thread::spawn(move || {
+            let (mut s, _) = lst.accept().unwrap();
+            let mut buf = [0u8; 1024];
+            let n = s.read(&mut buf).unwrap();
+            let text = String::from_utf8_lossy(&buf[..n]).into_owned();
+            *recorder.lock().unwrap() = text.lines().next().unwrap_or("").to_owned();
+            s.write_all(b"HTTP/1.1 200 OK\r\ncontent-length: 2\r\n\r\nok")
+                .unwrap();
+        });
+
+        let proxy = ProxyTarget::parse(&format!("http://127.0.0.1:{proxy_port}")).unwrap();
+        let origin = Origin {
+            tls: false,
+            host: "example.com".into(),
+            port: 80,
+        };
+        let mut sender = connect(&origin, None, Some(&proxy), Millis(5_000))
+            .await
+            .unwrap();
+        let req = Request::builder()
+            .uri("http://example.com/path")
+            .header("host", "example.com")
+            .body(Full::new(Bytes::new()))
+            .unwrap();
+        let Sender::H1(s) = &mut sender else {
+            panic!("plaintext through a proxy must be h1");
+        };
+        let res = s.send_request(req).await.unwrap();
+        assert_eq!(res.status(), 200);
+        assert_eq!(
+            seen.lock().unwrap().as_str(),
+            "GET http://example.com/path HTTP/1.1",
+            "the proxy did not see an absolute-form request line"
+        );
+    }
+
+    /// A TLS request through a proxy opens a CONNECT tunnel first. The stand-in
+    /// proxy accepts CONNECT, dials the real TLS server, and splices the two,
+    /// so the handshake runs end to end.
+    #[geario::test]
+    async fn a_tls_request_through_a_proxy_tunnels_with_connect() {
+        use std::io::{Read, Write};
+
+        let pki = issue("localhost");
+        let origin_port = tls_server(&pki, &[b"http/1.1"]);
+
+        let lst = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let proxy_port = lst.local_addr().unwrap().port();
+        std::thread::spawn(move || {
+            let (mut client, _) = lst.accept().unwrap();
+            let mut buf = [0u8; 1024];
+            let n = client.read(&mut buf).unwrap();
+            let first = String::from_utf8_lossy(&buf[..n]);
+            let line = first.lines().next().unwrap_or("");
+            assert!(
+                line.starts_with(&format!("CONNECT localhost:{origin_port} ")),
+                "expected a CONNECT line, got {line:?}"
+            );
+            let mut upstream = std::net::TcpStream::connect(("127.0.0.1", origin_port)).unwrap();
+            client
+                .write_all(b"HTTP/1.1 200 Connection Established\r\n\r\n")
+                .unwrap();
+            // Splice both directions until either side closes.
+            let mut a = client.try_clone().unwrap();
+            let mut b = upstream.try_clone().unwrap();
+            let up = std::thread::spawn(move || {
+                let _ = std::io::copy(&mut a, &mut upstream);
+            });
+            let _ = std::io::copy(&mut b, &mut client);
+            let _ = up.join();
+        });
+
+        let proxy = ProxyTarget::parse(&format!("http://127.0.0.1:{proxy_port}")).unwrap();
+        let tls = Tls::new(Some(pki.ca_pem.as_bytes()), true, false).unwrap();
+        let origin = Origin {
+            tls: true,
+            host: "localhost".into(),
+            port: origin_port,
+        };
+        let mut sender = connect(&origin, Some(&tls), Some(&proxy), Millis(5_000))
+            .await
+            .unwrap();
+        let res = roundtrip(&mut sender).await;
+        assert_eq!(res.status(), 200);
+        assert_eq!(
+            &res.into_body().collect().await.unwrap().to_bytes()[..],
+            b"ok"
+        );
     }
 
     #[test]

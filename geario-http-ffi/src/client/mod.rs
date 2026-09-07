@@ -452,9 +452,33 @@ async fn run_job(
             }
         };
 
-        let mut builder = hyper::Request::builder().method(method.clone()).uri(&uri);
+        // Request-line form: HTTP/2 needs the whole URI (it fills :authority
+        // and :path from it); a plaintext request through a proxy carries the
+        // whole URI so the proxy learns where it is going; a direct HTTP/1
+        // request sends only the path, which is what an origin server wants.
+        let target = if matches!(lease.sender, Sender::H2(_)) || (!origin.tls && pool.is_proxied())
+        {
+            uri.clone()
+        } else {
+            uri.path_and_query()
+                .map(|pq| pq.as_str())
+                .unwrap_or("/")
+                .parse()
+                .unwrap_or_else(|_| uri.clone())
+        };
+        let mut builder = hyper::Request::builder().method(method.clone()).uri(target);
         for (name, value) in &headers {
             builder = builder.header(&name[..], &value[..]);
+        }
+        // hyper needs a Host header for an origin-form HTTP/1 request.
+        if !builder
+            .headers_ref()
+            .is_some_and(|h| h.contains_key(hyper::header::HOST))
+            && !matches!(lease.sender, Sender::H2(_))
+        {
+            if let Some(auth) = uri.authority() {
+                builder = builder.header(hyper::header::HOST, auth.as_str());
+            }
         }
         let req = match builder.body(Full::new(Bytes::from(body.clone()))) {
             Ok(r) => r,

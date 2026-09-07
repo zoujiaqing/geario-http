@@ -18,7 +18,6 @@ use hyper::client::conn::{http1, http2};
 use geario_http::client::proxy::ProxyTarget;
 
 use super::connect::{Fail, Origin, Sender, Tls, connect};
-use crate::abi::GEARIO_HTTP_ERR_UNSUPPORTED;
 
 #[derive(Default)]
 struct Inner {
@@ -110,21 +109,23 @@ impl Pool {
         }
 
         // Nothing to reuse. Open a connection; if it is h2, share it.
-        //
-        // A proxy is configured but not yet honoured by the connector; going
-        // direct instead would leak traffic past it, so refuse rather than
-        // connect. Wired up next.
-        if self.proxy.is_some() {
-            return Err(Fail::new(
-                GEARIO_HTTP_ERR_UNSUPPORTED,
-                "proxying is configured but not yet available",
-            ));
-        }
-        let sender = connect(origin, self.tls.as_deref(), self.connect_timeout).await?;
+        let sender = connect(
+            origin,
+            self.tls.as_deref(),
+            self.proxy.as_ref(),
+            self.connect_timeout,
+        )
+        .await?;
         if let Sender::H2(s) = &sender {
             self.inner.borrow_mut().h2.insert(origin.clone(), s.clone());
         }
         Ok(self.lease(origin.clone(), sender))
+    }
+
+    /// Whether requests go through a proxy, which decides the request-line
+    /// form for a plaintext HTTP/1 request.
+    pub fn is_proxied(&self) -> bool {
+        self.proxy.is_some()
     }
 
     fn lease(&self, origin: Origin, sender: Sender) -> Lease {
