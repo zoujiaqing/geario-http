@@ -190,7 +190,13 @@ pub extern "C" fn geario_http_server_capabilities() -> u64 {
 pub extern "C" fn geario_http_client_capabilities() -> u64 {
     #[cfg(feature = "client")]
     {
+        // HTTP/2 is negotiated through ALPN over TLS; there is no h2c client.
+        // CUSTOM_CA and PROXY are added as their options are wired up.
         GEARIO_HTTP_CLIENT_CAP_HTTP1
+            | GEARIO_HTTP_CLIENT_CAP_HTTP2
+            | GEARIO_HTTP_CLIENT_CAP_TLS
+            | GEARIO_HTTP_CLIENT_CAP_CANCEL
+            | GEARIO_HTTP_CLIENT_CAP_STREAMING
     }
     #[cfg(not(feature = "client"))]
     {

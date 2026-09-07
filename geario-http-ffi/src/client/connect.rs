@@ -11,7 +11,6 @@ use std::sync::Arc;
 
 use geario::io::types::HttpProtocol;
 use geario::net::connect::{Connect, ConnectError, connect as tcp};
-use geario::service::cfg::SharedCfg;
 use geario::tls::rustls::TlsClientFilter;
 use geario::util::time::{Millis, timeout_checked};
 use geario_http::hyper_rt::{GearioExecutor, GearioTimer, GearioTransport};
@@ -266,6 +265,7 @@ fn classify_tls(e: &std::io::Error) -> Fail {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use geario::service::cfg::SharedCfg;
     use std::convert::Infallible;
 
     use geario::tls::rustls::TlsServerFilter;

@@ -15,7 +15,10 @@ use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::client::conn::{http1, http2};
 
+use geario_http::client::proxy::ProxyTarget;
+
 use super::connect::{Fail, Origin, Sender, Tls, connect};
+use crate::abi::GEARIO_HTTP_ERR_UNSUPPORTED;
 
 #[derive(Default)]
 struct Inner {
@@ -63,14 +66,16 @@ impl Lease {
 pub(crate) struct Pool {
     inner: Rc<RefCell<Inner>>,
     tls: Option<Rc<Tls>>,
+    proxy: Option<ProxyTarget>,
     connect_timeout: Millis,
 }
 
 impl Pool {
-    pub fn new(tls: Option<Tls>, connect_timeout: Millis) -> Pool {
+    pub fn new(tls: Option<Tls>, proxy: Option<ProxyTarget>, connect_timeout: Millis) -> Pool {
         Pool {
             inner: Rc::new(RefCell::new(Inner::default())),
             tls: tls.map(Rc::new),
+            proxy,
             connect_timeout,
         }
     }
@@ -105,6 +110,16 @@ impl Pool {
         }
 
         // Nothing to reuse. Open a connection; if it is h2, share it.
+        //
+        // A proxy is configured but not yet honoured by the connector; going
+        // direct instead would leak traffic past it, so refuse rather than
+        // connect. Wired up next.
+        if self.proxy.is_some() {
+            return Err(Fail::new(
+                GEARIO_HTTP_ERR_UNSUPPORTED,
+                "proxying is configured but not yet available",
+            ));
+        }
         let sender = connect(origin, self.tls.as_deref(), self.connect_timeout).await?;
         if let Sender::H2(s) = &sender {
             self.inner.borrow_mut().h2.insert(origin.clone(), s.clone());
@@ -224,7 +239,7 @@ mod tests {
     #[geario::test]
     async fn two_sequential_http1_requests_reuse_one_connection() {
         let (origin, accepts) = counting_server(false, false);
-        let pool = Pool::new(None, Millis(5_000));
+        let pool = Pool::new(None, None, Millis(5_000));
 
         let mut a = pool.checkout(&origin).await.unwrap();
         assert_eq!(drain(&mut a).await, hyper::http::Version::HTTP_11);
@@ -307,7 +322,7 @@ mod tests {
         let pki = issue();
         let (origin, accepts) = counting_tls_h2_server(&pki);
         let tls = Tls::new(Some(pki.0.as_bytes()), true, false).unwrap();
-        let pool = Pool::new(Some(tls), Millis(5_000));
+        let pool = Pool::new(Some(tls), None, Millis(5_000));
 
         // First request opens the shared connection.
         let mut first = pool.checkout(&origin).await.unwrap();
@@ -335,7 +350,7 @@ mod tests {
     #[geario::test]
     async fn a_closed_http1_connection_is_not_reused() {
         let (origin, accepts) = counting_server(false, true);
-        let pool = Pool::new(None, Millis(5_000));
+        let pool = Pool::new(None, None, Millis(5_000));
 
         let mut a = pool.checkout(&origin).await.unwrap();
         drain(&mut a).await;

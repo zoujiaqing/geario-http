@@ -3,17 +3,20 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ffi::c_void;
+use std::future::Future;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc;
 
-use futures_core::Stream;
-use geario_http::client::Client;
 use geario_http::client::proxy::ProxyTarget;
+use http_body_util::{BodyExt, Full};
+use hyper::body::Bytes;
 
 mod connect;
 mod pool;
 
+use self::connect::{Fail, Origin, Sender, Tls};
+use self::pool::Pool;
 use crate::abi::*;
 use crate::slice::{GearioHttpError, GearioHttpHeader, GearioHttpSlice};
 
@@ -290,9 +293,11 @@ pub unsafe extern "C" fn geario_http_client_new(
 
     // A flag this build does not know may be the one carrying a security
     // decision, so it is never dropped quietly.
-    if flags != 0 {
+    let known = GEARIO_HTTP_CLIENT_HTTP2_REQUIRED | GEARIO_HTTP_CLIENT_CA_REPLACE_SYSTEM;
+    if flags & !known != 0 {
         return GEARIO_HTTP_STATUS_UNKNOWN_FLAGS;
     }
+    let require_h2 = flags & GEARIO_HTTP_CLIENT_HTTP2_REQUIRED != 0;
 
     let max_inflight = if max_inflight == 0 {
         DEFAULT_MAX_INFLIGHT
@@ -316,14 +321,21 @@ pub unsafe extern "C" fn geario_http_client_new(
                 .name("geario-http-ffi-client")
                 .build(geario::rt::DefaultRuntime)
                 .block_on(async move {
-                    // Timeouts live on the shared config rather than on the
-                    // builder, so they go in through SharedCfg.
-                    let mut builder = Client::builder();
-                    if let Some(p) = proxy {
-                        builder = builder.proxy(p);
-                    }
-                    let client = builder.build(geario::service::cfg::SharedCfg::new("ffi-client"));
-                    let _ = (connect_ms, request_ms);
+                    // rustls needs a process-wide crypto provider; installing
+                    // it here is idempotent and harmless if the host already
+                    // did. Without it every https request would fail.
+                    let _ = tls_rustls::crypto::aws_lc_rs::default_provider().install_default();
+                    let tls = match Tls::new(None, false, require_h2) {
+                        Ok(t) => Some(t),
+                        // No usable TLS: https will report UNSUPPORTED, http
+                        // still works. Not a reason to refuse to start.
+                        Err(_) => None,
+                    };
+                    let connect_timeout =
+                        geario::util::time::Millis(u32::try_from(connect_ms).unwrap_or(u32::MAX));
+                    let request_timeout =
+                        geario::util::time::Millis(u32::try_from(request_ms).unwrap_or(u32::MAX));
+                    let pool = Pool::new(tls, proxy, connect_timeout);
                     let _ = ready_tx.send(true);
 
                     while let Ok(cmd) = rx.recv().await {
@@ -341,9 +353,9 @@ pub unsafe extern "C" fn geario_http_client_new(
                                 }
                             }
                             Command::Send(job) => {
-                                let client = client.clone();
+                                let pool = pool.clone();
                                 let counters = counters.clone();
-                                geario::rt::spawn(run_job(client, *job, counters));
+                                geario::rt::spawn(run_job(pool, *job, counters, request_timeout));
                             }
                         }
                     }
@@ -387,7 +399,12 @@ fn report(cbs: &Callbacks, id: u64, kind: GearioHttpErrorKind, msg: &str) {
     }
 }
 
-async fn run_job(client: Client, job: Job, counters: Counters) {
+async fn run_job(
+    pool: Pool,
+    job: Job,
+    counters: Counters,
+    request_timeout: geario::util::time::Millis,
+) {
     let Job {
         id,
         max_retries,
@@ -405,66 +422,114 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         Ok(u) => u,
         Err(_) => return report(&cbs, id, GEARIO_HTTP_ERR_INVALID_URL, "url is not utf-8"),
     };
-    let method = match geario_http::Method::from_bytes(&method) {
+    let (origin, uri) = match Origin::parse(url) {
+        Ok(v) => v,
+        Err(f) => return report(&cbs, id, f.kind, &f.message),
+    };
+    let method = match hyper::Method::from_bytes(&method) {
         Ok(m) => m,
         Err(_) => return report(&cbs, id, GEARIO_HTTP_ERR_INVALID_URL, "bad method"),
     };
 
-    // Only idempotent methods are retried. A POST that failed after reaching
-    // the server may already have been applied; trying again would turn a
-    // resilience feature into a duplicate side effect.
-    let attempts = if is_idempotent(method.as_str().as_bytes()) {
+    // Only idempotent methods are retried, and only when the failure happened
+    // before the request could have reached the server. A POST that failed
+    // after being sent may already have been applied.
+    let idempotent = is_idempotent(method.as_str().as_bytes());
+    let attempts = if idempotent {
         max_retries.saturating_add(1)
     } else {
         1
     };
 
-    let mut last: Option<geario::error::Error<geario_http::client::error::ClientError>> = None;
-    let mut resp = None;
-
-    for _ in 0..attempts {
-        let mut req = client.request(method.clone(), url);
-        for (name, value) in &headers {
-            req = req.header(&name[..], &value[..]);
-        }
-        let sent = if body.is_empty() {
-            req.send().await
-        } else {
-            req.send_body(geario::bytes::Bytes::from(body.clone()))
-                .await
+    let mut last: Option<Fail> = None;
+    'attempts: for _ in 0..attempts {
+        let mut lease = match pool.checkout(&origin).await {
+            Ok(l) => l,
+            Err(f) => {
+                // Nothing was sent, so a fresh attempt is safe.
+                last = Some(f);
+                continue;
+            }
         };
-        match sent {
-            Ok(r) => {
-                resp = Some(r);
-                break;
-            }
-            Err(e) => {
-                // Only failures that happened before a response started are
-                // safe to repeat. Anything else and the server has already
-                // seen the request.
-                let again = matches!(classify(&e), GEARIO_HTTP_ERR_CONNECT);
-                last = Some(e);
-                if !again {
-                    break;
-                }
-            }
+
+        let mut builder = hyper::Request::builder().method(method.clone()).uri(&uri);
+        for (name, value) in &headers {
+            builder = builder.header(&name[..], &value[..]);
         }
+        let req = match builder.body(Full::new(Bytes::from(body.clone()))) {
+            Ok(r) => r,
+            Err(e) => return report(&cbs, id, GEARIO_HTTP_ERR_INVALID_URL, &format!("{e}")),
+        };
+
+        let sent = match &mut lease.sender {
+            Sender::H1(s) => with_timeout(request_timeout, s.send_request(req)).await,
+            Sender::H2(s) => with_timeout(request_timeout, s.send_request(req)).await,
+            Sender::Gone => unreachable!(),
+        };
+        let resp = match sent {
+            Ok(Ok(r)) => r,
+            Ok(Err(_e)) => {
+                // The connection failed before a response. Whether the peer
+                // saw the request cannot be known; only an idempotent method
+                // is safe to replay, and the retry opens a fresh connection.
+                lease.checkin();
+                if idempotent {
+                    last = Some(Fail::new(
+                        GEARIO_HTTP_ERR_CONNECT,
+                        "connection failed before response",
+                    ));
+                    continue 'attempts;
+                }
+                return report(
+                    &cbs,
+                    id,
+                    GEARIO_HTTP_ERR_OUTCOME_UNKNOWN,
+                    "connection failed before response",
+                );
+            }
+            Err(()) => {
+                lease.checkin();
+                return report(&cbs, id, GEARIO_HTTP_ERR_TIMEOUT, "request timed out");
+            }
+        };
+
+        deliver(resp, id, &cbs, &counters, lease).await;
+        return;
     }
 
-    let resp = match resp {
-        Some(r) => r,
-        None => {
-            let e = last.expect("a failed attempt always records its error");
-            let msg = format!("{e}");
-            return report(&cbs, id, classify(&e), &msg);
-        }
+    let f = last.expect("a failed attempt always records its error");
+    report(&cbs, id, f.kind, &f.message);
+}
+
+/// Run `fut` under a deadline. A zero timeout disables it, which streaming
+/// responses need.
+async fn with_timeout<T>(
+    dur: geario::util::time::Millis,
+    fut: impl Future<Output = T>,
+) -> Result<T, ()> {
+    if dur.0 == 0 {
+        Ok(fut.await)
+    } else {
+        geario::util::time::timeout_checked(dur, fut).await
+    }
+}
+
+/// Hand the response head and body to the host, then return the connection.
+async fn deliver(
+    resp: hyper::Response<hyper::body::Incoming>,
+    id: u64,
+    cbs: &Callbacks,
+    counters: &Counters,
+    lease: crate::client::pool::Lease,
+) {
+    let version = match resp.version() {
+        hyper::Version::HTTP_2 => 2u8,
+        _ => 1u8,
     };
 
     if let Some(on_headers) = cbs.on_headers {
         // resp owns the header storage and outlives the callback, so the
-        // slices point straight at it. Copying each name and value into owned
-        // buffers first would allocate twice per header and free both on the
-        // next line.
+        // slices point straight at it.
         let view: Vec<GearioHttpHeader> = resp
             .headers()
             .iter()
@@ -477,28 +542,29 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
             cbs.user_data,
             id,
             resp.status().as_u16(),
-            11, // HTTP/1.1; the only version this build speaks.
+            version,
             view.as_ptr(),
             view.len(),
         );
         if action == GEARIO_HTTP_HEADERS_CANCEL {
-            return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at headers");
+            return report(cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at headers");
         }
     }
 
-    // Deliver the body chunk by chunk. Buffering it whole would be faster for
-    // small replies, but it puts no ceiling on memory and makes an endless
-    // stream impossible, which is what this callback shape exists for.
-    let mut resp = std::pin::pin!(resp);
+    let mut body = resp.into_body();
     loop {
-        let next = std::future::poll_fn(|cx| resp.as_mut().poll_next(cx)).await;
-        let chunk = match next {
+        let frame = match body.frame().await {
             None => break,
-            Some(Ok(c)) => c,
+            Some(Ok(f)) => f,
             Some(Err(e)) => {
-                let msg = format!("{e}");
-                return report(&cbs, id, GEARIO_HTTP_ERR_TRUNCATED, &msg);
+                // The head was already delivered, so the request was
+                // certainly processed; only the response is incomplete.
+                return report(cbs, id, GEARIO_HTTP_ERR_TRUNCATED, &format!("{e}"));
             }
+        };
+        let Ok(chunk) = frame.into_data() else {
+            // A trailers frame; nothing to hand to a body callback.
+            continue;
         };
         if chunk.is_empty() {
             continue;
@@ -506,28 +572,30 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
         let Some(on_chunk) = cbs.on_chunk else {
             continue;
         };
-
         match on_chunk(cbs.user_data, id, chunk.as_ptr(), chunk.len()) {
             GEARIO_HTTP_CHUNK_CANCEL => {
-                return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at chunk");
+                return report(cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled at chunk");
             }
             GEARIO_HTTP_CHUNK_PAUSE => {
-                // Nothing is read from the socket while parked, so this is
-                // real backpressure rather than a pause on notifications.
+                // Not polling the body is real backpressure: over h2 the flow
+                // control window stops advancing, over h1 the socket is not
+                // read.
                 counters.paused.fetch_add(1, Ordering::Relaxed);
                 let (tx, rx) = geario::util::channel::oneshot::channel();
                 PAUSED.with(|p| p.borrow_mut().insert(id, tx));
                 let _ = rx.await;
                 counters.paused.fetch_sub(1, Ordering::Relaxed);
                 if CANCELLED.with(|c| c.borrow_mut().remove(&id)).is_some() {
-                    return report(&cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled");
+                    return report(cbs, id, GEARIO_HTTP_ERR_CANCELLED, "cancelled");
                 }
             }
             _ => {}
         }
     }
 
-    report(&cbs, id, GEARIO_HTTP_ERR_NONE, "");
+    // The body is fully read, so an h1 connection can serve another request.
+    lease.checkin();
+    report(cbs, id, GEARIO_HTTP_ERR_NONE, "");
 }
 
 struct InflightGuard(Arc<AtomicU32>);
@@ -550,19 +618,6 @@ fn is_idempotent(method: &[u8]) -> bool {
         method,
         b"GET" | b"HEAD" | b"PUT" | b"DELETE" | b"OPTIONS" | b"TRACE"
     )
-}
-
-fn classify(err: &geario_http::client::error::ClientError) -> GearioHttpErrorKind {
-    use geario_http::client::error::ClientError as E;
-    match err {
-        E::Url(_) => GEARIO_HTTP_ERR_INVALID_URL,
-        E::Connect(_) => GEARIO_HTTP_ERR_CONNECT,
-        E::Timeout => GEARIO_HTTP_ERR_TIMEOUT,
-        E::Request(_) | E::Response(_) | E::Http(_) => GEARIO_HTTP_ERR_PROTOCOL,
-        // The request may have gone out; the peer's view of it is unknown.
-        E::Send(_) => GEARIO_HTTP_ERR_OUTCOME_UNKNOWN,
-        _ => GEARIO_HTTP_ERR_OUTCOME_UNKNOWN,
-    }
 }
 
 /// Send a request. Returns immediately; the callbacks report progress.
