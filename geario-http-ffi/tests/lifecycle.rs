@@ -197,3 +197,84 @@ mod body {
         );
     }
 }
+
+/// The same port serves HTTP/2 with prior knowledge. hyper4k's server reports
+/// H2C, so this one has to do it rather than only claim it.
+mod h2c {
+    use super::*;
+    use std::sync::Mutex;
+
+    fn curl_h2c(args: &[&str], stdin: Option<&[u8]>) -> std::process::Output {
+        let mut cmd = std::process::Command::new("curl");
+        cmd.args(["-s", "--http2-prior-knowledge"]).args(args);
+        cmd.stdout(std::process::Stdio::piped());
+        if stdin.is_some() {
+            cmd.stdin(std::process::Stdio::piped());
+        }
+        let mut child = cmd.spawn().expect("curl");
+        if let Some(bytes) = stdin {
+            use std::io::Write;
+            child.stdin.take().unwrap().write_all(bytes).unwrap();
+        }
+        child.wait_with_output().expect("curl")
+    }
+
+    #[test]
+    fn a_prior_knowledge_client_is_answered_over_http2() {
+        let host = CString::new("127.0.0.1").unwrap();
+        let srv = unsafe {
+            geario_http_server_start(host.as_ptr(), 8128, on_request, std::ptr::null_mut())
+        };
+        assert!(!srv.is_null(), "server did not start");
+
+        let out = curl_h2c(
+            &["-w", "\n%{http_version}", "http://127.0.0.1:8128/h2"],
+            None,
+        );
+        unsafe { geario_http_server_stop(srv) };
+
+        let text = String::from_utf8_lossy(&out.stdout);
+        let (body, version) = text.rsplit_once('\n').expect("curl -w line");
+        assert_eq!(body, "ok");
+        assert_eq!(version.trim(), "2", "not served over HTTP/2: {text:?}");
+    }
+
+    static SEEN: Mutex<Vec<u8>> = Mutex::new(Vec::new());
+
+    extern "C" fn echo_body(_user: *mut c_void, req: *const GearioHttpRequest) {
+        let req = unsafe { &*req };
+        let body = unsafe { std::slice::from_raw_parts(req.body.ptr, req.body.len) };
+        *SEEN.lock().unwrap() = body.to_vec();
+        unsafe {
+            geario_http_respond(
+                req.responder,
+                200,
+                std::ptr::null(),
+                0,
+                req.body.ptr,
+                req.body.len,
+            );
+        }
+    }
+
+    /// Bodies arrive as DATA frames under flow control; the handler must
+    /// still see the whole thing, once, as one slice.
+    #[test]
+    fn a_request_body_over_http2_reaches_the_handler_whole() {
+        let host = CString::new("127.0.0.1").unwrap();
+        let srv = unsafe {
+            geario_http_server_start(host.as_ptr(), 8129, echo_body, std::ptr::null_mut())
+        };
+        assert!(!srv.is_null(), "server did not start");
+
+        let sent: Vec<u8> = (0..300_000u32).map(|i| (i % 251) as u8).collect();
+        let out = curl_h2c(
+            &["--data-binary", "@-", "http://127.0.0.1:8129/echo"],
+            Some(&sent),
+        );
+        unsafe { geario_http_server_stop(srv) };
+
+        assert_eq!(SEEN.lock().unwrap().len(), sent.len());
+        assert_eq!(out.stdout, sent, "the echoed body did not match");
+    }
+}

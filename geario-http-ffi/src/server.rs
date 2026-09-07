@@ -1,14 +1,23 @@
 //! Server side of the C ABI.
+//!
+//! hyper owns the protocol; geario owns accept, workers, sockets and buffers.
+//! One port serves HTTP/1.1 and HTTP/2 over cleartext with prior knowledge,
+//! decided per connection from the first bytes.
 
+use std::convert::Infallible;
 use std::ffi::{CStr, c_char, c_void};
 use std::net::SocketAddr;
 use std::sync::mpsc;
 
-use geario::bytes::Bytes;
+use geario::io::Io;
 use geario::service::cfg::SharedCfg;
-use geario_http::body::BodyStream;
-use geario_http::header::{HeaderName, HeaderValue};
-use geario_http::{HttpService, Request, Response, StatusCode};
+use geario::service::fn_service;
+use geario_http::hyper_rt::serve_auto;
+use http_body_util::{BodyExt, Full, Limited, StreamBody};
+use hyper::body::{Bytes, Frame, Incoming};
+use hyper::header::{HeaderName, HeaderValue};
+use hyper::service::service_fn;
+use hyper::{Request, Response, StatusCode};
 
 use crate::abi::*;
 use crate::responder::{self, Reply};
@@ -53,6 +62,46 @@ struct Handler {
 unsafe impl Send for Handler {}
 unsafe impl Sync for Handler {}
 
+/// A response body: everything at once, or chunks as the host writes them.
+///
+/// Not a boxed body. The boxed forms in http-body-util require `Send`, and
+/// the chunk channel is thread-local like everything else on a worker; a
+/// response never leaves the worker that took its request.
+enum Body {
+    Once(Full<Bytes>),
+    Stream(StreamBody<Chunks>),
+}
+
+impl hyper::body::Body for Body {
+    type Data = Bytes;
+    type Error = Infallible;
+
+    fn poll_frame(
+        self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Result<Frame<Bytes>, Infallible>>> {
+        // Both variants are Unpin, so a plain projection is sound.
+        match self.get_mut() {
+            Body::Once(b) => std::pin::Pin::new(b).poll_frame(cx),
+            Body::Stream(b) => std::pin::Pin::new(b).poll_frame(cx),
+        }
+    }
+
+    fn is_end_stream(&self) -> bool {
+        match self {
+            Body::Once(b) => b.is_end_stream(),
+            Body::Stream(b) => b.is_end_stream(),
+        }
+    }
+
+    fn size_hint(&self) -> hyper::body::SizeHint {
+        match self {
+            Body::Once(b) => b.size_hint(),
+            Body::Stream(b) => b.size_hint(),
+        }
+    }
+}
+
 /// Parse `name: value` lines straight into header types.
 ///
 /// Going through owned byte pairs first would allocate twice per header and
@@ -81,19 +130,6 @@ fn parse_headers(ptr: *const u8, len: usize) -> Vec<(HeaderName, HeaderValue)> {
             ))
         })
         .collect()
-}
-
-fn render_headers(req: &Request) -> Vec<u8> {
-    let mut out = Vec::new();
-    for (name, value) in req.headers().iter() {
-        if !out.is_empty() {
-            out.push(b'\n');
-        }
-        out.extend_from_slice(name.as_str().as_bytes());
-        out.extend_from_slice(b": ");
-        out.extend_from_slice(value.as_bytes());
-    }
-    out
 }
 
 /// Start an HTTP/1.1 server.
@@ -153,10 +189,14 @@ pub unsafe extern "C" fn geario_http_server_start(
                         addr,
                         SharedCfg::new("FFI"),
                         async move |_| {
-                            HttpService::new(async move |req: Request| {
-                                Ok::<_, std::io::Error>(dispatch(handler, req).await)
+                            fn_service(async move |io: Io| {
+                                // hyper drives the connection; the protocol
+                                // is read off the first bytes.
+                                let _ =
+                                    serve_auto(io, service_fn(move |req| dispatch(handler, req)))
+                                        .await;
+                                Ok::<_, std::io::Error>(())
                             })
-                            .build()
                         },
                     ) {
                         Ok(b) => b,
@@ -199,42 +239,44 @@ pub unsafe extern "C" fn geario_http_server_start(
 /// never called, rather than being delivered truncated.
 const MAX_BODY: usize = 16 * 1024 * 1024;
 
-/// Read the whole request body.
-///
-/// `Err` means the body was too large or the connection failed; either way
-/// the handler must not see a partial body and believe it complete.
-async fn read_body(req: &mut Request) -> Result<Vec<u8>, Response> {
-    let mut payload = req.take_payload();
-    let mut body = Vec::new();
-    while let Some(chunk) = payload.recv().await {
-        let chunk = match chunk {
-            Ok(chunk) => chunk,
-            Err(_) => return Err(Response::BadRequest().body("could not read the request body")),
-        };
-        if body.len() + chunk.len() > MAX_BODY {
-            return Err(Response::PayloadTooLarge().finish());
-        }
-        body.extend_from_slice(&chunk);
-    }
-    Ok(body)
+fn status_only(status: StatusCode) -> Response<Body> {
+    Response::builder()
+        .status(status)
+        .body(Body::Once(Full::new(Bytes::new())))
+        .unwrap()
 }
 
-async fn dispatch(handler: Handler, mut req: Request) -> Response {
-    let body = match read_body(&mut req).await {
+/// Read the whole request body, or say why the handler must not see it.
+async fn read_body(body: Incoming) -> Result<Bytes, Response<Body>> {
+    match Limited::new(body, MAX_BODY).collect().await {
+        Ok(collected) => Ok(collected.to_bytes()),
+        Err(e) if e.is::<http_body_util::LengthLimitError>() => {
+            Err(status_only(StatusCode::PAYLOAD_TOO_LARGE))
+        }
+        // The connection failed mid-body. Nothing to tell the handler, and a
+        // partial body must not be mistaken for a complete one.
+        Err(_) => Err(status_only(StatusCode::BAD_REQUEST)),
+    }
+}
+
+async fn dispatch(handler: Handler, req: Request<Incoming>) -> Result<Response<Body>, Infallible> {
+    let (parts, body) = req.into_parts();
+    let body = match read_body(body).await {
         Ok(body) => body,
-        Err(response) => return response,
+        Err(response) => return Ok(response),
     };
+    let req = Request::from_parts(parts, ());
 
     let (responder, rx) = responder::register();
 
     // req outlives the callback, so its str slices can be borrowed straight
     // across rather than copied first.
-    let headers = render_headers(&req);
+    let headers = render_head(&req);
     let query = req.uri().query().unwrap_or("");
 
     let c_req = GearioHttpRequest {
         method: GearioHttpSlice::borrow(req.method().as_str().as_bytes()),
-        path: GearioHttpSlice::borrow(req.path().as_bytes()),
+        path: GearioHttpSlice::borrow(req.uri().path().as_bytes()),
         query: GearioHttpSlice::borrow(query.as_bytes()),
         headers: GearioHttpSlice::borrow(&headers),
         body: GearioHttpSlice::borrow(&body),
@@ -243,23 +285,41 @@ async fn dispatch(handler: Handler, mut req: Request) -> Response {
 
     (handler.cb)(handler.user_data, &c_req);
 
-    match rx.await {
+    Ok(match rx.await {
         Ok(reply) => build_response(reply),
         Err(_) => {
             responder::forget(responder);
-            Response::InternalServerError().body("handler dropped the responder")
+            Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::Once(Full::new(Bytes::from_static(
+                    b"handler dropped the responder",
+                ))))
+                .unwrap()
         }
-    }
+    })
 }
 
-/// Wraps a chunk stream so the body sees `Result<Bytes, _>`.
-///
-/// A dedicated type rather than `StreamExt::map`, which geario does not carry
-/// and which would mean pulling futures-util into the FFI crate for one call.
-struct OkStream(geario::util::channel::mpsc::Receiver<Bytes>);
+fn render_head(req: &Request<()>) -> Vec<u8> {
+    let mut out = Vec::new();
+    for (name, value) in req.headers() {
+        if !out.is_empty() {
+            out.push(b'\n');
+        }
+        out.extend_from_slice(name.as_str().as_bytes());
+        out.extend_from_slice(b": ");
+        out.extend_from_slice(value.as_bytes());
+    }
+    out
+}
 
-impl futures_core::Stream for OkStream {
-    type Item = Result<Bytes, std::io::Error>;
+/// Turns the chunk channel into body frames.
+///
+/// A dedicated type rather than a `StreamExt` adapter, which would mean
+/// pulling futures-util into the FFI crate for one map.
+struct Chunks(geario::util::channel::mpsc::Receiver<Bytes>);
+
+impl futures_core::Stream for Chunks {
+    type Item = Result<Frame<Bytes>, Infallible>;
 
     fn poll_next(
         mut self: std::pin::Pin<&mut Self>,
@@ -267,35 +327,36 @@ impl futures_core::Stream for OkStream {
     ) -> std::task::Poll<Option<Self::Item>> {
         std::pin::Pin::new(&mut self.0)
             .poll_next(cx)
-            .map(|o| o.map(Ok))
+            .map(|chunk| chunk.map(|b| Ok(Frame::data(b))))
     }
 }
 
-fn apply_head(
-    status: u16,
-    headers: Vec<(HeaderName, HeaderValue)>,
-) -> geario_http::ResponseBuilder {
+fn head(status: u16, headers: Vec<(HeaderName, HeaderValue)>) -> hyper::http::response::Builder {
     let status = StatusCode::from_u16(status).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
-    let mut builder = Response::build(status);
+    let mut builder = Response::builder().status(status);
     for (name, value) in headers {
-        builder.header(name, value);
+        builder = builder.header(name, value);
     }
     builder
 }
 
-fn build_response(reply: Reply) -> Response {
-    match reply {
+fn build_response(reply: Reply) -> Response<Body> {
+    let built = match reply {
         Reply::Once {
             status,
             headers,
             body,
-        } => apply_head(status, headers).body(body),
+        } => head(status, headers).body(Body::Once(Full::new(Bytes::from(body)))),
         Reply::Stream {
             status,
             headers,
             chunks,
-        } => apply_head(status, headers).body(BodyStream::new(OkStream(chunks))),
-    }
+        } => head(status, headers).body(Body::Stream(StreamBody::new(Chunks(chunks)))),
+    };
+    // The only way to fail here is a header the host spelled in a way the
+    // parser accepted and the builder did not; that is a bug in the reply,
+    // not a reason to drop the connection.
+    built.unwrap_or_else(|_| status_only(StatusCode::INTERNAL_SERVER_ERROR))
 }
 
 /// Answer a request.

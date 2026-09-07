@@ -14,9 +14,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use geario::bytes::Bytes;
 use geario::util::channel::{mpsc, oneshot};
-use geario_http::header::{HeaderName, HeaderValue};
+use hyper::body::Bytes;
+use hyper::header::{HeaderName, HeaderValue};
 
 /// What the host eventually says in reply.
 pub(crate) enum Reply {

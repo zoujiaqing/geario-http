@@ -177,7 +177,7 @@ pub extern "C" fn geario_http_version() -> *const c_char {
 pub extern "C" fn geario_http_server_capabilities() -> u64 {
     #[cfg(feature = "server")]
     {
-        GEARIO_HTTP_SERVER_CAP_HTTP1 | GEARIO_HTTP_SERVER_CAP_STREAMING
+        GEARIO_HTTP_SERVER_CAP_HTTP1 | GEARIO_HTTP_SERVER_CAP_H2C | GEARIO_HTTP_SERVER_CAP_STREAMING
     }
     #[cfg(not(feature = "server"))]
     {

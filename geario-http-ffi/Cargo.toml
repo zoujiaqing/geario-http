@@ -19,12 +19,15 @@ workspace = true
 
 [features]
 default = ["server", "client"]
-server = ["geario-http/server"]
+# The server runs hyper over geario: HTTP/1.1 and h2c on one port.
+server = ["geario-http/hyper-server", "geario-http/hyper-http1", "geario-http/hyper-http2"]
 client = ["geario-http/client"]
 
 [dependencies]
 geario = { workspace = true }
 geario-http = { workspace = true }
+hyper = { workspace = true, features = ["http1", "http2", "server", "client"] }
+http-body-util = { workspace = true }
 async-channel = { workspace = true }
 futures-core = { workspace = true }
 log = { workspace = true }
