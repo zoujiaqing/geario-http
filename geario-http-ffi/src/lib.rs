@@ -7,8 +7,10 @@
 #![allow(missing_debug_implementations)]
 
 mod abi;
-mod responder;
 mod slice;
+
+#[cfg(feature = "server")]
+mod responder;
 
 #[cfg(feature = "client")]
 mod client;

@@ -17,8 +17,11 @@ C ABI 在这里不是补丁。Kotlin/Native 是一等消费者，所以 `geario-
 | `geario-http-ffi` | C、Kotlin/Native | 基于 `geario-http` 的 C ABI，产出 staticlib 与 cdylib |
 
 这套 ABI 与 [hyper4k](https://github.com/netonstream/hyper4k) 已经在用的一致，
-宿主换引擎只需改链接参数。能力位由 cargo feature 推导，宿主可以在运行时
-问出某个构建到底带了什么。
+宿主换引擎只需改链接参数。两端都在 geario 的 IO 上跑 hyper，所以 FFI 的能力
+与 hyper4k 一致：服务端在同一端口上讲 HTTP/1.1 与明文 HTTP/2（prior
+knowledge），客户端讲 HTTP/1.1，并在 TLS 上按 ALPN 讲 HTTP/2，支持自定义 CA、
+代理（TLS 目标走 CONNECT 隧道）、取消与流式响应体。能力位由 cargo feature
+推导，宿主可以在运行时问出某个构建到底带了什么。
 
 ## 目录约定
 
@@ -45,7 +48,9 @@ C ABI 在这里不是补丁。Kotlin/Native 是一等消费者，所以 `geario-
 
 只开 server 的构建比 `full` 小约 46%，这在把库链进 FFI 目标时是实际收益。
 
-HTTP/2 通过 hyper 运行时层提供：`hyper-http2`，或用 `hyper-full` 一次性开启全部版本与角色。
+Rust 消费者的 HTTP/2 通过 hyper 运行时层提供：`hyper-http2`，或用 `hyper-full`
+一次性开启全部版本与角色。原生 HTTP/1 栈（`http1`、`server`、`client`）保留给
+需要它的消费者；FFI 建在 hyper 层上。
 
 明文目标支持 HTTP 代理。TLS 走代理需要 CONNECT 隧道，尚未实现，
 会明确拒绝而不是绕过代理直连。

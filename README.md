@@ -19,8 +19,13 @@ alongside the Rust API rather than bolted on later.
 
 The ABI matches the one [hyper4k](https://github.com/netonstream/hyper4k)
 already ships, so a host that speaks it can swap engines by changing a link
-line. Capability bits are derived from cargo features, so the host can ask
-at runtime what a given build actually contains.
+line. Both sides run hyper over geario's IO, so the FFI has the same reach
+hyper4k does: the server speaks HTTP/1.1 and HTTP/2 over cleartext (prior
+knowledge) on one port, and the client speaks HTTP/1.1 and, over TLS,
+HTTP/2 by ALPN, with a custom CA bundle, a proxy (CONNECT for TLS
+targets), cancellation and streaming bodies. Capability bits are derived
+from cargo features, so the host can ask at runtime what a given build
+actually contains.
 
 ## Layout
 
@@ -49,8 +54,10 @@ becomes a version dependency once geario stabilises.
 A server-only build is about 46% smaller than `full`, which matters when the
 library is linked into an FFI target.
 
-HTTP/2 is available through the hyper runtime layer: `hyper-http2`, or
-`hyper-full` for every version and role at once.
+HTTP/2 for a Rust consumer is available through the hyper runtime layer:
+`hyper-http2`, or `hyper-full` for every version and role at once. The
+native HTTP/1 stack (`http1`, `server`, `client`) stays for consumers that
+want it; the FFI is built on the hyper layer.
 
 An HTTP proxy is supported for plaintext targets. TLS through a proxy needs
 a CONNECT tunnel, which is not implemented, and is refused rather than sent

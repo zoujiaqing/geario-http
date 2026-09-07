@@ -19,6 +19,8 @@ impl GearioHttpSlice {
         }
     }
 
+    // Only the client request struct starts from an empty slice.
+    #[cfg(feature = "client")]
     #[inline]
     pub(crate) fn empty() -> Self {
         GearioHttpSlice {
@@ -28,14 +30,16 @@ impl GearioHttpSlice {
     }
 }
 
-/// One header, borrowed.
+/// One header, borrowed. Used by the client callbacks.
+#[cfg(feature = "client")]
 #[repr(C)]
 pub struct GearioHttpHeader {
     pub name: GearioHttpSlice,
     pub value: GearioHttpSlice,
 }
 
-/// Why a request ended.
+/// Why a request ended. Delivered to the client's on_done.
+#[cfg(feature = "client")]
 #[repr(C)]
 pub struct GearioHttpError {
     /// One of the `GEARIO_HTTP_ERR_*` constants. The stable part.
