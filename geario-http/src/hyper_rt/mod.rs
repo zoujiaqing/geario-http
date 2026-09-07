@@ -19,9 +19,21 @@
 //! when it cannot, and taking it is what applies backpressure.
 
 mod executor;
+#[cfg(all(
+    feature = "hyper-server",
+    feature = "hyper-http1",
+    feature = "hyper-http2"
+))]
+mod serve;
 mod timer;
 mod transport;
 
 pub use self::executor::GearioExecutor;
+#[cfg(all(
+    feature = "hyper-server",
+    feature = "hyper-http1",
+    feature = "hyper-http2"
+))]
+pub use self::serve::{Protocol, detect, serve_auto};
 pub use self::timer::GearioTimer;
 pub use self::transport::GearioTransport;
