@@ -494,7 +494,7 @@ async fn run_job(client: Client, job: Job, counters: Counters) {
             Some(Ok(c)) => c,
             Some(Err(e)) => {
                 let msg = format!("{e}");
-                return report(&cbs, id, GEARIO_HTTP_ERR_IO, &msg);
+                return report(&cbs, id, GEARIO_HTTP_ERR_TRUNCATED, &msg);
             }
         };
         if chunk.is_empty() {
@@ -555,9 +555,10 @@ fn classify(err: &geario_http::client::error::ClientError) -> GearioHttpErrorKin
         E::Url(_) => GEARIO_HTTP_ERR_INVALID_URL,
         E::Connect(_) => GEARIO_HTTP_ERR_CONNECT,
         E::Timeout => GEARIO_HTTP_ERR_TIMEOUT,
-        E::Send(_) => GEARIO_HTTP_ERR_IO,
         E::Request(_) | E::Response(_) | E::Http(_) => GEARIO_HTTP_ERR_PROTOCOL,
-        _ => GEARIO_HTTP_ERR_IO,
+        // The request may have gone out; the peer's view of it is unknown.
+        E::Send(_) => GEARIO_HTTP_ERR_OUTCOME_UNKNOWN,
+        _ => GEARIO_HTTP_ERR_OUTCOME_UNKNOWN,
     }
 }
 

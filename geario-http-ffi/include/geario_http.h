@@ -28,11 +28,23 @@ typedef int32_t GearioHttpStatus;
 #define GEARIO_HTTP_STATUS_WRONG_STATE   (-41)
 
 /** Capability bits. Derived from cargo features, so a bit cannot claim
- *  something this build does not contain. */
-#define GEARIO_HTTP_CAP_HTTP1     (UINT64_C(1) << 0)
-#define GEARIO_HTTP_CAP_HTTP2     (UINT64_C(1) << 1)
-#define GEARIO_HTTP_CAP_TLS       (UINT64_C(1) << 2)
-#define GEARIO_HTTP_CAP_STREAMING (UINT64_C(1) << 3)
+ *  something this build does not contain. Server and client have separate
+ *  sets, numbered as hyper4k numbers them. */
+#define GEARIO_HTTP_SERVER_CAP_HTTP1     (UINT64_C(1) << 0)
+#define GEARIO_HTTP_SERVER_CAP_H2C       (UINT64_C(1) << 1)
+#define GEARIO_HTTP_SERVER_CAP_STREAMING (UINT64_C(1) << 2)
+
+#define GEARIO_HTTP_CLIENT_CAP_HTTP1     (UINT64_C(1) << 0)
+#define GEARIO_HTTP_CLIENT_CAP_HTTP2     (UINT64_C(1) << 1)
+#define GEARIO_HTTP_CLIENT_CAP_TLS       (UINT64_C(1) << 2)
+#define GEARIO_HTTP_CLIENT_CAP_CUSTOM_CA (UINT64_C(1) << 3)
+#define GEARIO_HTTP_CLIENT_CAP_CANCEL    (UINT64_C(1) << 4)
+#define GEARIO_HTTP_CLIENT_CAP_STREAMING (UINT64_C(1) << 5)
+#define GEARIO_HTTP_CLIENT_CAP_PROXY     (UINT64_C(1) << 6)
+
+/** Client option flags. Any other bit set is GEARIO_HTTP_STATUS_UNKNOWN_FLAGS. */
+#define GEARIO_HTTP_CLIENT_HTTP2_REQUIRED    (UINT64_C(1) << 0) /* fail, never downgrade */
+#define GEARIO_HTTP_CLIENT_CA_REPLACE_SYSTEM (UINT64_C(1) << 1) /* default is "append"   */
 
 /** ABI revision of this build. */
 uint32_t geario_http_abi_version(void);
@@ -138,15 +150,28 @@ typedef int32_t GearioHttpChunkAction;
 #define GEARIO_HTTP_CHUNK_PAUSE    1
 #define GEARIO_HTTP_CHUNK_CANCEL   2
 
+/** Numbered as hyper4k numbers them. TRUNCATED means the response had
+ *  started, so the request was certainly processed. OUTCOME_UNKNOWN means it
+ *  cannot be known whether the peer processed it; that is the only kind on
+ *  which replaying a non-idempotent request is a judgement call. */
 typedef int32_t GearioHttpErrorKind;
-#define GEARIO_HTTP_ERR_NONE        0
-#define GEARIO_HTTP_ERR_CONNECT     1
-#define GEARIO_HTTP_ERR_TIMEOUT     2
-#define GEARIO_HTTP_ERR_PROTOCOL    3
-#define GEARIO_HTTP_ERR_IO          4
-#define GEARIO_HTTP_ERR_CANCELLED   5
-#define GEARIO_HTTP_ERR_INVALID_URL 6
-#define GEARIO_HTTP_ERR_UNSUPPORTED 7
+#define GEARIO_HTTP_ERR_NONE            0
+#define GEARIO_HTTP_ERR_DNS             1
+#define GEARIO_HTTP_ERR_CONNECT         2
+#define GEARIO_HTTP_ERR_TLS_CA          3
+#define GEARIO_HTTP_ERR_TLS_HOSTNAME    4
+#define GEARIO_HTTP_ERR_TLS_EXPIRED     5
+#define GEARIO_HTTP_ERR_TLS_OTHER       6
+#define GEARIO_HTTP_ERR_ALPN_NO_H2      7
+#define GEARIO_HTTP_ERR_PROTOCOL        8
+#define GEARIO_HTTP_ERR_TIMEOUT         9
+#define GEARIO_HTTP_ERR_IDLE_TIMEOUT    10
+#define GEARIO_HTTP_ERR_CANCELLED       11
+#define GEARIO_HTTP_ERR_TRUNCATED       12
+#define GEARIO_HTTP_ERR_OUTCOME_UNKNOWN 13
+/*  Kinds with no hyper4k counterpart start at 40. */
+#define GEARIO_HTTP_ERR_INVALID_URL     40
+#define GEARIO_HTTP_ERR_UNSUPPORTED     41
 
 typedef struct {
     GearioHttpSlice name;
