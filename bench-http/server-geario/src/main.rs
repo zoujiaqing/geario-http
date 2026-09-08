@@ -4,7 +4,7 @@
 //! headers, so the client can check it is talking to the same thing.
 use std::io;
 
-use geario::service::cfg::SharedCfg;
+use geario::service::cfg::{SharedCfg, SharedCfgBuilder};
 use geario_http::{HttpService, Request, Response};
 
 
@@ -65,7 +65,7 @@ async fn main() -> io::Result<()> {
     geario::server::net::build()
         .disable_signals()
         .workers(workers)
-        .bind("bench", addr, SharedCfg::new("BENCH"), async |_| {
+        .bind("bench", addr, bench_cfg(), async |_| {
             HttpService::new(async move |mut req: Request| {
                 // Drain the request body. A server that skips it is not doing
                 // the work the POST case is meant to measure.
@@ -93,4 +93,24 @@ async fn main() -> io::Result<()> {
         })?
         .run()
         .await
+}
+
+/// Shared config for the bench, with an optional write page size override via
+/// BENCH_WRITE_PAGE (KB) so the io_uring per-page send behaviour can be probed.
+fn bench_cfg() -> SharedCfgBuilder {
+    let cfg = SharedCfg::new("BENCH");
+    if let Some(kb) = std::env::var("BENCH_WRITE_PAGE").ok().and_then(|v| v.parse::<usize>().ok()) {
+        use geario::bytes::BytePageSize;
+        let size = match kb {
+            0..=4 => BytePageSize::Size4,
+            5..=8 => BytePageSize::Size8,
+            9..=16 => BytePageSize::Size16,
+            17..=24 => BytePageSize::Size24,
+            25..=32 => BytePageSize::Size32,
+            33..=48 => BytePageSize::Size48,
+            _ => BytePageSize::Size64,
+        };
+        return cfg.add(geario::io::IoConfig::default().set_write_page_size(size));
+    }
+    cfg
 }
