@@ -1,0 +1,26 @@
+[package]
+name = "server-ntex4"
+version = "0.1.0"
+edition = "2021"
+
+# ntex 4.0 (main), its own neon runtime, pinned to a public commit so this
+# builds without a local checkout: `cargo build --release --features polling`.
+# The crate does not compile cleanly under ntex's `warnings = deny` on newer
+# rustc, so build with RUSTFLAGS="--cap-lints=allow" (see build.sh). cap-lints
+# relaxes lint enforcement only; it does not change generated code.
+[features]
+polling = ["ntex/neon-polling"]
+uring = ["ntex/neon-uring"]
+
+[dependencies]
+ntex = { git = "https://github.com/ntex-rs/ntex", rev = "8af6d0271c1f4a3226c79a92740f7e9bf31347cd", default-features = true }
+
+# Matches the bench-http workspace profile exactly (debug/frame-pointers do
+# not change codegen; opt-level, lto, codegen-units and panic do).
+[profile.release]
+debug = 1
+force-frame-pointers = true
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"

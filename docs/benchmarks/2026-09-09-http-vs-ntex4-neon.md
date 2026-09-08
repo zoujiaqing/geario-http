@@ -17,21 +17,36 @@
 - Toolchain: rustc 1.98.1, built natively on the Rocky host (cross-compile
   from macOS is blocked: the homebrew toolchain's glibc lacks `getrandom`,
   which ntex pulls through std).
-- ntex server: `cargo build --release --features polling` with
-  `RUSTFLAGS=--cap-lints=allow`. `polling` = `ntex/neon-polling`. cap-lints
-  only relaxes ntex's `warnings = deny`; it does not change codegen. The
-  ntex sub-crates are `[patch]`-redirected to the local checkout so one
-  consistent set builds (without the patch they resolve to crates.io and the
-  versions skew).
+- ntex server: `bench-http/server-ntex4`, in this repo. ntex is a
+  git dependency pinned to the SHA above, so it builds without a local
+  checkout wherever github is reachable: `server-ntex4/build.sh polling`
+  (`= --features polling` with `RUSTFLAGS=--cap-lints=allow`; cap-lints
+  relaxes ntex's `warnings = deny` only, no codegen change). The Rocky host
+  has no github egress, so its binary was built from an rsync of the same
+  pinned checkout; the SHA is the anchor and is identical.
 - geario server: `server-geario` built `--features polling` = `geario/neon-polling`.
 - Both raw `HttpService` (h1), no web/routing layer, same fixed-size
   `application/json` body, request body drained on POST.
 
 ## Runtime (evidence)
 
-Both confirmed by strace at run time: `epoll_pwait` present, no
-`io_uring_enter`. So both are the neon runtime on the polling driver. Same
-host (Rocky 9, 4 cores), `BENCH_WORKERS=4` for both, same client.
+Both servers print their configuration at startup:
+
+    server-geario driver=neon-polling workers=4 body=1024
+    server-ntex4  ntex@8af6d027... driver=neon-polling workers=4 body=1024
+
+Both built with the explicit `polling` feature (`= neon-polling`), confirmed
+by that line and by strace (`epoll_pwait` present, no `io_uring_enter`). Same
+host (Rocky 9, 4 cores), `BENCH_WORKERS=4` for both, same client, same
+release profile (opt-level 3, lto, codegen-units 1, panic=abort; debug and
+frame-pointers match too and do not affect codegen).
+
+The four-point table below was measured with the ntex server built
+`neon-default` (which falls back to polling on this host, io_uring being
+off) -- both ran polling, confirmed by strace. Rebuilding the ntex server
+with the explicit `polling` feature and re-running the 1 KB point gives
++9.17% [+6.68%, +11.64%], matching the +9.29% below, so the four-point
+result stands.
 
 ## Results
 
@@ -46,10 +61,18 @@ geario faster.
 | POST 1 KB | **+10.02%** [+8.08%, +11.82%] |
 
 geario-http is 6-11% faster than ntex 4.0 across all four, every interval
-clear of zero, no bad rounds. Because the runtime and driver are identical,
-this is the framework/IO layer, not a runtime difference. It is consistent
-with the echo result (same poller-fork advantage: fewer syscalls per
-wakeup) now shown to carry into the HTTP hot path.
+clear of zero, no bad rounds.
+
+What this is and is not: both are neon-family thread-per-core stacks on a
+polling backend, but geario's runtime and poller are the modified fork, so
+the two are not byte-identical below the HTTP layer. The honest claim is a
+**throughput difference between two complete HTTP/1.1 stacks in this
+configuration**, observed and reproducible, not a proven attribution to the
+poller. The echo syscall attribution does not transfer automatically; to
+attribute the HTTP lead to the poller specifically needs a toggle A/B under
+HTTP load (geario built with the poller change reverted vs not, same
+server), which has not been run. It is consistent with the echo finding,
+which is a weaker statement than caused by it.
 
 ## What is not covered
 

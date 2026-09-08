@@ -48,6 +48,20 @@ async fn main() -> io::Result<()> {
         .and_then(|v| v.parse().ok())
         .unwrap_or_else(|| std::thread::available_parallelism().map_or(1, |n| n.get()));
 
+    let driver = if cfg!(feature = "uring") {
+        "neon-uring"
+    } else if cfg!(feature = "polling") {
+        "neon-polling"
+    } else {
+        "neon-default"
+    };
+    eprintln!(
+        "server-geario driver={} workers={} body={}",
+        driver,
+        workers,
+        std::env::var("BENCH_BODY_SIZE").unwrap_or_else(|_| "24".into()),
+    );
+
     geario::server::net::build()
         .disable_signals()
         .workers(workers)
