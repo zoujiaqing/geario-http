@@ -1,3 +1,9 @@
+> SUPERSEDED. This compared against ntex 2.18 on tokio, which is not ntex's
+> own runtime and not the 4.0 line geario was forked from. The real,
+> same-runtime comparison is 2026-09-09-http-vs-ntex4-neon.md (ntex 4.0 on
+> neon+polling): geario +6-11%. The 2.x/tokio numbers below are kept only as
+> a secondary observation against the installable stable release.
+
 # HTTP/1.1: geario-http against ntex
 
 - Date: 2026-09-09
