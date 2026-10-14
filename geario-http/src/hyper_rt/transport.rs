@@ -7,6 +7,10 @@ use std::task::{Context, Poll, ready};
 use geario::io::{Filter, Io};
 use hyper::rt::{Read, ReadBufCursor, Write};
 
+// Limit copying per poll. Combined with the pre-write backpressure check,
+// the high watermark can be exceeded by at most one copy quantum.
+const MAX_BUFFERED_WRITE: usize = 64 * 1024;
+
 /// Carries a geario `Io` across hyper's runtime boundary.
 ///
 /// Not `Send`: geario's handles are `Rc`-based and belong to the worker that
@@ -16,6 +20,7 @@ use hyper::rt::{Read, ReadBufCursor, Write};
 #[derive(Debug)]
 pub struct GearioTransport<F> {
     io: Io<F>,
+    vectored: bool,
     /// Set once hyper has asked to shut the connection down.
     ///
     /// A `Cell` because the write methods take `Pin<&mut Self>` and geario's
@@ -140,6 +145,64 @@ mod tests {
     }
 
     #[geario::test]
+    async fn oversized_writes_resume_without_losing_bytes() {
+        geario::util::time::timeout(geario::util::time::Millis(5_000), async {
+            for vectored in [false, true] {
+                let (peer, stream) = IoTest::create();
+                peer.remote_buffer_cap(0);
+                let mut io = GearioTransport::new(Io::new(
+                    stream,
+                    SharedCfg::new("BOUNDED")
+                        .add(IoConfig::default().set_write_buf(4096, 1024, 2048)),
+                ));
+                let _ = lazy(|cx| io.io.poll_read_ready(cx)).await;
+                let body: Vec<u8> = (0..MAX_BUFFERED_WRITE * 3 + 17)
+                    .map(|n| (n % 251) as u8)
+                    .collect();
+                let mut offset = 0;
+                let mut received = Vec::new();
+                while offset < body.len() {
+                    peer.remote_buffer_cap(0);
+                    let n = if vectored {
+                        let remaining = &body[offset..];
+                        let split = remaining.len().min(37);
+                        let slices = [
+                            io::IoSlice::new(&[]),
+                            io::IoSlice::new(&remaining[..split]),
+                            io::IoSlice::new(&remaining[split..]),
+                        ];
+                        poll_fn(|cx| Pin::new(&mut io).poll_write_vectored(cx, &slices))
+                            .await
+                            .unwrap()
+                    } else {
+                        poll_fn(|cx| Pin::new(&mut io).poll_write(cx, &body[offset..]))
+                            .await
+                            .unwrap()
+                    };
+                    assert_eq!(n, (body.len() - offset).min(MAX_BUFFERED_WRITE));
+                    // The last short chunk can fall below the configured watermark.
+                    if n >= 4096 {
+                        assert!(
+                            lazy(|cx| Pin::new(&mut io).poll_write(cx, b"blocked"))
+                                .await
+                                .is_pending()
+                        );
+                    }
+                    peer.remote_buffer_cap(body.len());
+                    poll_fn(|cx| Pin::new(&mut io).poll_flush(cx))
+                        .await
+                        .unwrap();
+                    received.extend_from_slice(&peer.read_any());
+                    offset += n;
+                }
+                assert_eq!(received, body);
+            }
+        })
+        .await
+        .expect("bounded writes did not resume");
+    }
+
+    #[geario::test]
     async fn flush_drains_small_writes_and_shutdown_delivers_tail() {
         let (peer, stream) = IoTest::create();
         peer.remote_buffer_cap(0);
@@ -178,6 +241,7 @@ impl<F> GearioTransport<F> {
     pub fn new(io: Io<F>) -> Self {
         Self {
             io,
+            vectored: !matches!(std::env::var("GEARIO_NO_VECTORED").as_deref(), Ok("1")),
             shutting_down: std::cell::Cell::new(false),
         }
     }
@@ -287,11 +351,11 @@ impl<F: Filter> Write for GearioTransport<F> {
 
         // The socket would not take it: buffer, so the write interest gets
         // armed and the connection parks instead of spinning.
-        let len = buf.len();
+        let len = buf.len().min(MAX_BUFFERED_WRITE);
         let res = self
             .io
             .get_ref()
-            .with_write_buf(|dst| dst.extend_from_slice(buf));
+            .with_write_buf(|dst| dst.extend_from_slice(&buf[..len]));
         match res {
             Ok(()) => Poll::Ready(Ok(len)),
             Err(e) => Poll::Ready(Err(e)),
@@ -299,9 +363,8 @@ impl<F: Filter> Write for GearioTransport<F> {
     }
 
     fn is_write_vectored(&self) -> bool {
-        // Toggleable so an A/B run can compare the two paths in one binary,
-        // which removes build differences from the comparison.
-        !matches!(std::env::var("GEARIO_NO_VECTORED").as_deref(), Ok("1"))
+        // Stable per connection, with no environment lookup on the hot path.
+        self.vectored
     }
 
     fn poll_write_vectored(
@@ -317,8 +380,8 @@ impl<F: Filter> Write for GearioTransport<F> {
         }
         // Advertising vectored writes makes hyper queue header and body
         // slices instead of flattening them into an intermediate buffer.
-        // Taking them all in one call is what lets geario reach for writev
-        // rather than issuing a write per slice.
+        // Coalesce slices up to one copy quantum without copying an
+        // unbounded response while the peer is stalled.
         match self.io.get_ref().try_write_vectored(bufs) {
             Ok(0) => {}
             Ok(n) => return Poll::Ready(Ok(n)),
@@ -328,8 +391,12 @@ impl<F: Filter> Write for GearioTransport<F> {
         Poll::Ready(self.io.get_ref().with_write_buf(|dst| {
             let mut written = 0;
             for buf in bufs {
-                dst.extend_from_slice(buf);
-                written += buf.len();
+                let n = buf.len().min(MAX_BUFFERED_WRITE - written);
+                dst.extend_from_slice(&buf[..n]);
+                written += n;
+                if written == MAX_BUFFERED_WRITE {
+                    break;
+                }
             }
             written
         }))
