@@ -13,6 +13,7 @@
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::{Mutex, OnceLock};
 
 use geario::util::channel::{mpsc, oneshot};
 use hyper::body::Bytes;
@@ -32,6 +33,83 @@ pub(crate) enum Reply {
         headers: Vec<(HeaderName, HeaderValue)>,
         chunks: mpsc::Receiver<Bytes>,
     },
+}
+
+/// Commands sent back to the worker that owns a responder.
+///
+/// geario's HTTP objects are deliberately local to a worker.  The FFI host,
+/// however, is allowed to resume a coroutine on another thread.  This mailbox
+/// keeps those two facts compatible: the foreign call only enqueues owned data;
+/// the worker performs the actual local delivery.
+enum Command {
+    Response {
+        id: u64,
+        status: u16,
+        headers: Vec<(HeaderName, HeaderValue)>,
+        body: Vec<u8>,
+    },
+    BeginStream(u64, u16, Vec<(HeaderName, HeaderValue)>),
+    WriteChunk(u64, Bytes),
+    FinishStream(u64),
+}
+
+static WORKER_COMMANDS: OnceLock<Mutex<HashMap<u32, async_channel::Sender<Command>>>> =
+    OnceLock::new();
+
+fn command_map() -> &'static Mutex<HashMap<u32, async_channel::Sender<Command>>> {
+    WORKER_COMMANDS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+/// Install the mailbox for the current geario worker.  It is idempotent and
+/// must be called from a task running on that worker before registering a
+/// responder.
+pub(crate) fn ensure_worker_mailbox() {
+    let id = worker_id();
+    if command_map().lock().unwrap().contains_key(&id) {
+        return;
+    }
+    let (tx, rx) = async_channel::unbounded::<Command>();
+    command_map().lock().unwrap().insert(id, tx);
+    geario::rt::spawn(async move {
+        while let Ok(command) = rx.recv().await {
+            match command {
+                Command::Response {
+                    id,
+                    status,
+                    headers,
+                    body,
+                } => {
+                    let _ = deliver_local(
+                        id,
+                        Reply::Once {
+                            status,
+                            headers,
+                            body,
+                        },
+                    );
+                }
+                Command::BeginStream(id, status, headers) => {
+                    let _ = begin_stream_local(id, status, headers);
+                }
+                Command::WriteChunk(id, chunk) => {
+                    let _ = write_chunk_local(id, chunk);
+                }
+                Command::FinishStream(id) => {
+                    let _ = finish_stream_local(id);
+                }
+            }
+        }
+    });
+}
+
+fn enqueue(id: u64, command: Command) -> bool {
+    let worker = (id >> 32) as u32;
+    command_map()
+        .lock()
+        .unwrap()
+        .get(&worker)
+        .cloned()
+        .is_some_and(|tx| tx.try_send(command).is_ok())
 }
 
 static NEXT_WORKER: AtomicU32 = AtomicU32::new(1);
@@ -68,8 +146,6 @@ pub(crate) fn register() -> (u64, oneshot::Receiver<Reply>) {
 /// Outcome of trying to answer a responder.
 pub(crate) enum Delivery {
     Sent,
-    /// Called from a worker other than the one that issued the responder.
-    WrongThread,
     /// Unknown id, or one that was already answered.
     Unknown,
 }
@@ -79,8 +155,29 @@ pub(crate) fn deliver(id: u64, reply: Reply) -> Delivery {
         return Delivery::Unknown;
     }
     if (id >> 32) as u32 != worker_id() {
-        return Delivery::WrongThread;
+        let command = match reply {
+            Reply::Once {
+                status,
+                headers,
+                body,
+            } => Command::Response {
+                id,
+                status,
+                headers,
+                body,
+            },
+            Reply::Stream { .. } => return Delivery::Unknown,
+        };
+        return if enqueue(id, command) {
+            Delivery::Sent
+        } else {
+            Delivery::Unknown
+        };
     }
+    deliver_local(id, reply)
+}
+
+fn deliver_local(id: u64, reply: Reply) -> Delivery {
     let tx = PENDING.with(|p| p.borrow_mut().remove(&id));
     match tx {
         Some(tx) => {
@@ -131,8 +228,16 @@ pub(crate) fn begin_stream(
         return Delivery::Unknown;
     }
     if (id >> 32) as u32 != worker_id() {
-        return Delivery::WrongThread;
+        return if enqueue(id, Command::BeginStream(id, status, headers)) {
+            Delivery::Sent
+        } else {
+            Delivery::Unknown
+        };
     }
+    begin_stream_local(id, status, headers)
+}
+
+fn begin_stream_local(id: u64, status: u16, headers: Vec<(HeaderName, HeaderValue)>) -> Delivery {
     let (tx, rx) = mpsc::channel();
     let sender = PENDING.with(|p| p.borrow_mut().remove(&id));
     match sender {
@@ -155,8 +260,16 @@ pub(crate) fn write_chunk(id: u64, chunk: Bytes) -> Delivery {
         return Delivery::Unknown;
     }
     if (id >> 32) as u32 != worker_id() {
-        return Delivery::WrongThread;
+        return if enqueue(id, Command::WriteChunk(id, chunk)) {
+            Delivery::Sent
+        } else {
+            Delivery::Unknown
+        };
     }
+    write_chunk_local(id, chunk)
+}
+
+fn write_chunk_local(id: u64, chunk: Bytes) -> Delivery {
     STREAMING.with(|s| match s.borrow().get(&id) {
         // A send failure means the peer went away; that is not the host's
         // fault, and the stream ends on its own.
@@ -174,8 +287,16 @@ pub(crate) fn finish_stream(id: u64) -> Delivery {
         return Delivery::Unknown;
     }
     if (id >> 32) as u32 != worker_id() {
-        return Delivery::WrongThread;
+        return if enqueue(id, Command::FinishStream(id)) {
+            Delivery::Sent
+        } else {
+            Delivery::Unknown
+        };
     }
+    finish_stream_local(id)
+}
+
+fn finish_stream_local(id: u64) -> Delivery {
     match STREAMING.with(|s| s.borrow_mut().remove(&id)) {
         Some(_) => Delivery::Sent,
         None => Delivery::Unknown,

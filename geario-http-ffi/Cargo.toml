@@ -21,6 +21,7 @@ workspace = true
 default = ["server", "client"]
 # The server runs hyper over geario: HTTP/1.1 and h2c on one port.
 server = ["geario-http/hyper-server", "geario-http/hyper-http1", "geario-http/hyper-http2"]
+native-h1 = ["geario-http/server"]
 client = [
     "geario-http/client",
     "geario-http/hyper-client",

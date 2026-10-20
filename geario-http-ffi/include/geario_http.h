@@ -98,12 +98,8 @@ GearioHttpServer *geario_http_server_start(const char *host,
                                            GearioHttpRequestCallback on_request,
                                            void *user_data);
 
-/** Answer a request.
- *
- *  Must be called on the worker that delivered the responder. Calling it from
- *  another thread returns GEARIO_HTTP_STATUS_WRONG_THREAD: geario is
- *  thread-per-core and its handles are not shared between workers.
- *
+/** Answer a request. The call may come from any host thread; the owned bytes
+ *  are forwarded to the geario worker that owns the connection.
  *  `headers` is `name: value` lines separated by '\n', or NULL. */
 GearioHttpStatus geario_http_respond(uint64_t responder,
                                      uint16_t status,
@@ -133,6 +129,39 @@ GearioHttpStatus geario_http_response_finish(uint64_t responder);
 
 /** Stop a server and free its handle. NULL is a no-op. */
 void geario_http_server_stop(GearioHttpServer *server);
+
+/* ------------------------------------------------------------------ */
+/* Native geario-http H1 experiment                                  */
+/* ------------------------------------------------------------------ */
+
+/** Request delivered by the native geario-http H1 service. */
+typedef struct {
+    GearioHttpSlice method;
+    GearioHttpSlice path;
+    GearioHttpSlice query;
+    GearioHttpSlice headers;
+    GearioHttpSlice body;
+    uint64_t responder;
+} GearioHttpNativeRequest;
+
+typedef void (*GearioHttpNativeRequestCallback)(
+    void *user_data, const GearioHttpNativeRequest *req);
+
+typedef struct GearioHttpNativeServer GearioHttpNativeServer;
+
+/** Start the direct geario-http H1 path. This is experimental and does not
+ *  provide the Hyper path's HTTP/2 or TLS capabilities. */
+GearioHttpNativeServer *geario_http_native_h1_start(
+    const char *host, uint16_t port,
+    GearioHttpNativeRequestCallback on_request, void *user_data);
+
+/** Complete a native H1 request. Safe from any host thread. */
+GearioHttpStatus geario_http_native_h1_respond(
+    uint64_t responder, uint16_t status,
+    const unsigned char *headers, size_t headers_len,
+    const unsigned char *body, size_t body_len);
+
+void geario_http_native_h1_stop(GearioHttpNativeServer *server);
 
 /* ------------------------------------------------------------------ */
 /* Client                                                             */

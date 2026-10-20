@@ -18,6 +18,9 @@ mod client;
 #[cfg(feature = "server")]
 mod server;
 
+#[cfg(feature = "native-h1")]
+mod native_server;
+
 pub use self::abi::*;
 pub use self::slice::*;
 
@@ -26,3 +29,6 @@ pub use self::client::*;
 
 #[cfg(feature = "server")]
 pub use self::server::*;
+
+#[cfg(feature = "native-h1")]
+pub use self::native_server::*;

@@ -45,6 +45,43 @@ fn start_then_stop_returns() {
     );
 }
 
+/// A host coroutine may resume on a different Kotlin/Native worker. The FFI
+/// must hand the response back to geario's owning worker instead of rejecting
+/// it or touching geario's local state from the foreign thread.
+#[test]
+fn a_response_from_another_thread_is_delivered() {
+    extern "C" fn async_response(_user: *mut c_void, req: *const GearioHttpRequest) {
+        let responder = unsafe { (*req).responder };
+        std::thread::spawn(move || {
+            let body = b"cross-thread";
+            unsafe {
+                geario_http_respond(
+                    responder,
+                    200,
+                    std::ptr::null(),
+                    0,
+                    body.as_ptr(),
+                    body.len(),
+                );
+            }
+        });
+    }
+
+    let host = CString::new("127.0.0.1").unwrap();
+    let srv = unsafe {
+        geario_http_server_start(host.as_ptr(), 8129, async_response, std::ptr::null_mut())
+    };
+    assert!(!srv.is_null(), "server did not start");
+
+    let resp = std::process::Command::new("curl")
+        .args(["-s", "http://127.0.0.1:8129/cross-thread"])
+        .output()
+        .expect("curl");
+    unsafe { geario_http_server_stop(srv) };
+
+    assert_eq!(String::from_utf8_lossy(&resp.stdout), "cross-thread");
+}
+
 /// The library must not take the host's signal handlers.
 ///
 /// geario's server installs handlers for SIGINT, SIGTERM and SIGQUIT by

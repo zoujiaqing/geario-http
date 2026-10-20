@@ -267,6 +267,9 @@ async fn dispatch(handler: Handler, req: Request<Incoming>) -> Result<Response<B
     };
     let req = Request::from_parts(parts, ());
 
+    // Register the worker mailbox before exposing the responder to foreign
+    // code. A suspended Kotlin handler may complete on a different thread.
+    responder::ensure_worker_mailbox();
     let (responder, rx) = responder::register();
 
     // req outlives the callback, so its str slices can be borrowed straight
@@ -400,7 +403,6 @@ pub unsafe extern "C" fn geario_http_respond(
         },
     ) {
         responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
-        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
         responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
     }
 }
@@ -448,7 +450,6 @@ pub unsafe extern "C" fn geario_http_response_begin(
     let headers = parse_headers(headers_ptr, headers_len);
     match responder::begin_stream(responder, status, headers) {
         responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
-        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
         responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
     }
 }
@@ -472,7 +473,6 @@ pub unsafe extern "C" fn geario_http_response_write(
     };
     match responder::write_chunk(responder, chunk) {
         responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
-        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
         responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
     }
 }
@@ -482,7 +482,6 @@ pub unsafe extern "C" fn geario_http_response_write(
 pub extern "C" fn geario_http_response_finish(responder: u64) -> GearioHttpStatus {
     match responder::finish_stream(responder) {
         responder::Delivery::Sent => GEARIO_HTTP_STATUS_OK,
-        responder::Delivery::WrongThread => GEARIO_HTTP_STATUS_WRONG_THREAD,
         responder::Delivery::Unknown => GEARIO_HTTP_STATUS_INVALID_ARG,
     }
 }
