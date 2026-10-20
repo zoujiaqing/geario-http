@@ -1,0 +1,16 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /tmp/geario-arena-20260918/geario-http/bench-http/server-ntex4/Cargo.toml
+workspace: /tmp/geario-arena-20260918/geario-http/bench-http/Cargo.toml
+warning: Cargo.toml: unused manifest key: profile.release.force-frame-pointers
+warning: workspace (manifest) generated 1 warning
+warning: server-ntex4/Cargo.toml: unused manifest key: profile.release.force-frame-pointers
+warning: `server-ntex4` (manifest) generated 1 warning
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.08s
+     Running unittests src/bin/arena-baseline.rs (target/release/deps/arena_baseline-c3b6926af8bd2113)
+
+running 2 tests
+test tests::computes_inputs_not_a_fixed_response ... ok
+test tests::rejects_invalid_query_and_overflow ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

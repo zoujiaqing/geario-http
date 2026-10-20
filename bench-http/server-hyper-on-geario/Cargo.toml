@@ -16,3 +16,5 @@ geario-http = { path = "../../geario-http", default-features = false, features =
 hyper = { version = "1.11", features = ["http1", "server"] }
 http-body-util = "0.1"
 bytes = "1"
+serde = { version = "1", features = ["derive"] }
+serde_urlencoded = "0.7"

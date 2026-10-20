@@ -1,0 +1,26 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /tmp/geario-arena-20260918/geario-http/bench-http/server-ntex4/Cargo.toml
+workspace: /tmp/geario-arena-20260918/geario-http/bench-http/Cargo.toml
+warning: Cargo.toml: unused manifest key: profile.release.force-frame-pointers
+warning: workspace (manifest) generated 1 warning
+warning: server-ntex4/Cargo.toml: unused manifest key: profile.release.force-frame-pointers
+warning: `server-ntex4` (manifest) generated 1 warning
+ Downloading crates ...
+  Downloaded http-body v1.1.0
+  Downloaded http-body-util v0.1.5
+  Downloaded hyper v1.11.1
+   Compiling futures-core v0.3.34
+   Compiling smallvec v1.16.0
+   Compiling http-body v1.1.0
+   Compiling geario v0.1.0 (/tmp/geario-arena-20260918/geario/geario)
+   Compiling tokio v1.53.1
+   Compiling async-channel v2.5.0
+   Compiling futures-channel v0.3.34
+   Compiling http-body-util v0.1.5
+   Compiling parking_lot_core v0.9.12
+   Compiling parking_lot v0.12.5
+   Compiling hyper v1.11.1
+   Compiling geario-http v0.1.0 (/tmp/geario-arena-20260918/geario-http/geario-http)
+   Compiling server-hyper-on-geario v0.1.0 (/tmp/geario-arena-20260918/geario-http/bench-http/server-hyper-on-geario)
+   Compiling server-geario v0.1.0 (/tmp/geario-arena-20260918/geario-http/bench-http/server-geario)
+    Finished `release` profile [optimized + debuginfo] target(s) in 35.52s

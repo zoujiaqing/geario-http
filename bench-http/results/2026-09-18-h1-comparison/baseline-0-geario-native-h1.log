@@ -1,0 +1,91 @@
+[info] available CPUs: 16
+[info] framework: geario-native-h1 (geario-native-h1, Rust)
+[info] subscribed tests: baseline
+[info] building image: httparena-geario-native-h1
+[info] skipping system tuning as requested (SKIP_TUNE=true)
+
+==============================================
+=== geario-native-h1 / baseline / 4096c (tool=gcannon) ===
+==============================================
+[warn] profile cpuset 0-31,64-95 exceeds available CPUs (max 15) — using all cores
+[info] waiting for server...
+[info] server ready
+
+[run 1/3]
+gcannon v0.5.3
+  Target:    172.21.105.40:8080/
+  Threads:   16
+  Conns:     4096 (256/thread)
+  Pipeline:  1
+  Req/conn:  unlimited (keep-alive)
+  Templates: 3
+  Expected:  200
+  Duration:  5s
+
+
+  Thread Stats   Avg      p50      p90      p99    p99.9
+    Latency   4.81ms   3.02ms   11.80ms   15.50ms   19.40ms
+
+  4239364 requests in 5.00s, 4239176 responses
+  Throughput: 847.71K req/s
+  Bandwidth:  112.37MB/s
+  Status codes: 2xx=4239176, 3xx=0, 4xx=0, 5xx=0
+  Latency samples: 4239161 / 4239176 responses (100.0%)
+  Per-template: 1483104,1382089,1373968
+  Per-template-ok: 1483104,1382089,1373968
+[info] CPU 944.1% | Mem 82MiB
+
+[run 2/3]
+gcannon v0.5.3
+  Target:    172.21.105.40:8080/
+  Threads:   16
+  Conns:     4096 (256/thread)
+  Pipeline:  1
+  Req/conn:  unlimited (keep-alive)
+  Templates: 3
+  Expected:  200
+  Duration:  5s
+
+
+  Thread Stats   Avg      p50      p90      p99    p99.9
+    Latency   4.79ms   3.06ms   11.80ms   15.10ms   17.90ms
+
+  4281508 requests in 5.00s, 4281497 responses
+  Throughput: 856.18K req/s
+  Bandwidth:  113.50MB/s
+  Status codes: 2xx=4281497, 3xx=0, 4xx=0, 5xx=0
+  Latency samples: 4281481 / 4281497 responses (100.0%)
+  Per-template: 1489634,1389061,1402786
+  Per-template-ok: 1489634,1389061,1402786
+[info] CPU 1067.3% | Mem 87MiB
+
+[run 3/3]
+gcannon v0.5.3
+  Target:    172.21.105.40:8080/
+  Threads:   16
+  Conns:     4096 (256/thread)
+  Pipeline:  1
+  Req/conn:  unlimited (keep-alive)
+  Templates: 3
+  Expected:  200
+  Duration:  5s
+
+
+  Thread Stats   Avg      p50      p90      p99    p99.9
+    Latency   4.80ms   3.08ms   11.90ms   15.60ms   18.50ms
+
+  4261509 requests in 5.00s, 4261481 responses
+  Throughput: 852.16K req/s
+  Bandwidth:  112.96MB/s
+  Status codes: 2xx=4261481, 3xx=0, 4xx=0, 5xx=0
+  Latency samples: 4261467 / 4261481 responses (100.0%)
+  Per-template: 1463033,1400292,1398142
+  Per-template-ok: 1463033,1400292,1398142
+[info] CPU 978.0% | Mem 93MiB
+
+=== Best: 856299 req/s (CPU: 1067.3%, Mem: 87MiB) ===
+[info] input BW: 66.15MB/s (avg template: 81 bytes)
+[info] dry-run — not saving (use --save to persist)
+httparena-bench-geario-native-h1
+httparena-bench-geario-native-h1
+[info] done

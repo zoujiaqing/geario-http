@@ -1,0 +1,150 @@
+{
+  "geario-native-h1": [
+    {
+      "method": "GET",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "content-length": "2",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "55"
+    },
+    {
+      "method": "GET",
+      "path": "/baseline11?a=-5&b=123",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "content-length": "3",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "118"
+    },
+    {
+      "method": "GET",
+      "path": "/baseline11?%61=11&b=2",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "content-length": "2",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "13"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "content-length": "2",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "75"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": true,
+      "version": 11,
+      "headers": {
+        "content-length": "2",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "75"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=-10&b=3",
+      "chunked": true,
+      "version": 11,
+      "headers": {
+        "content-length": "2",
+        "content-type": "text/plain; charset=utf-8",
+        "server": "geario-http"
+      },
+      "body": "12"
+    }
+  ],
+  "geario-hyper-h1": [
+    {
+      "method": "GET",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "2"
+      },
+      "body": "55"
+    },
+    {
+      "method": "GET",
+      "path": "/baseline11?a=-5&b=123",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "3"
+      },
+      "body": "118"
+    },
+    {
+      "method": "GET",
+      "path": "/baseline11?%61=11&b=2",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "2"
+      },
+      "body": "13"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": false,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "2"
+      },
+      "body": "75"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=13&b=42",
+      "chunked": true,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "2"
+      },
+      "body": "75"
+    },
+    {
+      "method": "POST",
+      "path": "/baseline11?a=-10&b=3",
+      "chunked": true,
+      "version": 11,
+      "headers": {
+        "server": "geario-http",
+        "content-type": "text/plain; charset=utf-8",
+        "content-length": "2"
+      },
+      "body": "12"
+    }
+  ]
+}

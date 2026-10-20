@@ -10,3 +10,5 @@ polling = ["geario/neon-polling"]
 [dependencies]
 geario = { path = "../../../geario/geario" }
 geario-http = { path = "../../geario-http", features = ["http1", "server"] }
+serde = { version = "1", features = ["derive"] }
+serde_urlencoded = "0.7"
