@@ -63,6 +63,11 @@ Rust 消费者的 HTTP/2 通过 hyper 运行时层提供：`hyper-http2`，或�
     cargo build -p geario-http-ffi --release
     make -C geario-http-ffi/examples && ./geario-http-ffi/examples/version
 
+## 架构
+
+架构精简范围、两条协议路径及 HTTP/3 演进边界见
+[Transport and protocol boundaries](docs/ARCHITECTURE_BOUNDARIES.md)。
+
 ## 许可证
 
 MIT OR Apache-2.0，与上游 ntex 一致。归属信息见 `NOTICE`。

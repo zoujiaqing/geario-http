@@ -55,7 +55,6 @@ hyper-full = ["hyper-http1", "hyper-http2", "hyper-server", "hyper-client"]
 
 [dependencies]
 geario = { workspace = true }
-rcgen = { workspace = true }
 foldhash = { workspace = true }
 futures-core = { workspace = true }
 http = { workspace = true }

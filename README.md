@@ -77,4 +77,5 @@ MIT OR Apache-2.0, matching upstream ntex. See `NOTICE` for attribution.
 
 ## Documentation
 
+- [Transport boundaries and HTTP/3 direction](docs/ARCHITECTURE_BOUNDARIES.md)
 - [中文说明](README.zh-Hans.md)

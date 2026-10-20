@@ -251,6 +251,20 @@ impl<F> GearioTransport<F> {
     }
 }
 
+impl<F: Filter> GearioTransport<F> {
+    #[inline]
+    fn drain_read_buffer(&self, buf: &mut ReadBufCursor<'_>) -> usize {
+        self.io.get_ref().with_read_buf(|src| {
+            let n = std::cmp::min(src.len(), buf.remaining());
+            if n != 0 {
+                buf.put_slice(&src[..n]);
+                src.advance_to(n);
+            }
+            n
+        })
+    }
+}
+
 impl<F: Filter> Read for GearioTransport<F> {
     fn poll_read(
         self: Pin<&mut Self>,
@@ -267,18 +281,7 @@ impl<F: Filter> Read for GearioTransport<F> {
         //
         // Draining first means a poll that has data never touches the
         // readiness path at all.
-        let taken = self.io.get_ref().with_read_buf(|src| {
-            if src.is_empty() {
-                return 0;
-            }
-            let n = std::cmp::min(src.len(), buf.remaining());
-            if n == 0 {
-                return 0;
-            }
-            buf.put_slice(&src[..n]);
-            src.advance_to(n);
-            n
-        });
+        let taken = self.drain_read_buffer(&mut buf);
         if taken > 0 {
             return Poll::Ready(Ok(()));
         }
@@ -288,18 +291,7 @@ impl<F: Filter> Read for GearioTransport<F> {
             // is told about EOF.
             Ok(None) => Poll::Ready(Ok(())),
             Ok(Some(())) => {
-                let taken = self.io.get_ref().with_read_buf(|src| {
-                    if src.is_empty() {
-                        return 0;
-                    }
-                    let n = std::cmp::min(src.len(), buf.remaining());
-                    if n == 0 {
-                        return 0;
-                    }
-                    buf.put_slice(&src[..n]);
-                    src.advance_to(n);
-                    n
-                });
+                let taken = self.drain_read_buffer(&mut buf);
                 if taken > 0 {
                     Poll::Ready(Ok(()))
                 } else {
