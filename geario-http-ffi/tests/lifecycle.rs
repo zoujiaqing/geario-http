@@ -1,3 +1,5 @@
+#![cfg(feature = "server")]
+
 use std::ffi::{CString, c_void};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
@@ -69,12 +71,12 @@ fn a_response_from_another_thread_is_delivered() {
 
     let host = CString::new("127.0.0.1").unwrap();
     let srv = unsafe {
-        geario_http_server_start(host.as_ptr(), 8129, async_response, std::ptr::null_mut())
+        geario_http_server_start(host.as_ptr(), 8131, async_response, std::ptr::null_mut())
     };
     assert!(!srv.is_null(), "server did not start");
 
     let resp = std::process::Command::new("curl")
-        .args(["-s", "http://127.0.0.1:8129/cross-thread"])
+        .args(["-s", "http://127.0.0.1:8131/cross-thread"])
         .output()
         .expect("curl");
     unsafe { geario_http_server_stop(srv) };

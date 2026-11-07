@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::mpsc;
 
-use geario_http::client::proxy::ProxyTarget;
+use geario_http::proxy::ProxyTarget;
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 
@@ -703,7 +703,7 @@ pub unsafe extern "C" fn geario_http_client_send(
     // Refusing rather than queueing also keeps it meaningful: an unbounded
     // queue just moves the pressure somewhere the host cannot see.
     if c.inflight
-        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+        .try_update(Ordering::AcqRel, Ordering::Acquire, |n| {
             (n < c.max_inflight).then_some(n + 1)
         })
         .is_err()

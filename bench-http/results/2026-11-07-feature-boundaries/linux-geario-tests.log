@@ -1,0 +1,867 @@
+   Compiling libc v0.2.189
+   Compiling cfg-if v1.0.4
+   Compiling proc-macro2 v1.0.107
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.47
+   Compiling crossbeam-utils v0.8.22
+   Compiling syn v3.0.5
+   Compiling serde_core v1.0.229
+   Compiling zerocopy v0.8.56
+   Compiling bitflags v2.13.1
+   Compiling getrandom v0.3.4
+   Compiling pin-project-lite v0.2.17
+   Compiling shlex v2.0.1
+   Compiling find-msvc-tools v0.1.12
+   Compiling parking v2.2.1
+   Compiling cc v1.4.5
+   Compiling rustix v1.1.4
+   Compiling object v0.37.3
+   Compiling serde v1.0.229
+   Compiling parking_lot_core v0.9.12
+   Compiling getrandom v0.4.3
+   Compiling cfg_aliases v0.2.2
+   Compiling memchr v2.8.3
+   Compiling ring v0.17.14
+   Compiling nix v0.31.3
+   Compiling event-listener v5.4.2
+   Compiling serde_derive v1.0.229
+   Compiling errno v0.3.14
+   Compiling deranged v0.5.8
+   Compiling gimli v0.32.3
+   Compiling log v0.4.34
+   Compiling linux-raw-sys v0.12.1
+   Compiling futures-core v0.3.34
+   Compiling unicode-segmentation v1.13.3
+   Compiling scopeguard v1.2.0
+   Compiling time-core v0.1.9
+   Compiling powerfmt v0.2.0
+   Compiling num-conv v0.2.2
+   Compiling zeroize v1.9.0
+   Compiling itoa v1.0.18
+   Compiling ntex-io-uring v0.7.120
+   Compiling smallvec v1.16.0
+   Compiling adler2 v2.0.1
+   Compiling thiserror v2.0.20
+   Compiling signal-hook v0.4.4
+   Compiling zmij v1.0.23
+   Compiling miniz_oxide v0.8.9
+   Compiling addr2line v0.25.1
+   Compiling rustls-pki-types v1.15.1
+   Compiling time v0.3.55
+   Compiling lock_api v0.4.14
+   Compiling convert_case v0.10.0
+   Compiling env_filter v2.0.0
+   Compiling ppv-lite86 v0.2.21
+   Compiling signal-hook-registry v1.4.8
+   Compiling rand_core v0.9.5
+   Compiling event-listener-strategy v0.5.4
+   Compiling thiserror-impl v2.0.20
+   Compiling concurrent-queue v2.5.0
+   Compiling getrandom v0.2.17
+   Compiling num_cpus v1.17.0
+   Compiling syn v2.0.119
+   Compiling equivalent v1.0.2
+   Compiling serde_json v1.0.151
+   Compiling base64 v0.22.1
+   Compiling untrusted v0.9.0
+   Compiling rustc-demangle v0.1.28
+   Compiling unicode-xid v0.2.6
+   Compiling geario v0.1.0 (/root/geario-validation-20261107/geario/geario)
+   Compiling slab v0.4.12
+   Compiling allocator-api2 v0.2.21
+   Compiling bytes v1.12.1
+   Compiling sc v0.2.7
+   Compiling foldhash v0.2.0
+   Compiling hashbrown v0.17.1
+   Compiling http v1.5.0
+   Compiling derive_more-impl v2.1.1
+   Compiling backtrace v0.3.76
+   Compiling pem v3.0.6
+   Compiling core_affinity v0.8.3
+   Compiling async-channel v2.5.0
+   Compiling uuid v1.26.0
+   Compiling geario-polling v0.1.0 (/root/geario-validation-20261107/geario/geario-polling)
+   Compiling rand_chacha v0.9.0
+   Compiling env_logger v0.11.11
+   Compiling yasna v0.5.2
+   Compiling parking_lot v0.12.5
+   Compiling geario-macros v0.1.0 (/root/geario-validation-20261107/geario/geario-macros)
+   Compiling crossbeam-channel v0.5.16
+   Compiling crossbeam-queue v0.3.13
+   Compiling swap-buffer-queue v0.2.1
+   Compiling socket2 v0.6.5
+   Compiling async-task v4.7.1
+   Compiling oneshot v0.2.1
+   Compiling scoped-tls v1.0.1
+   Compiling futures-timer v3.0.4
+   Compiling atomic-waker v1.1.2
+   Compiling futures-task v0.3.34
+   Compiling futures-util v0.3.34
+   Compiling rcgen v0.13.2
+   Compiling rand v0.9.5
+   Compiling derive_more v2.1.1
+   Compiling serde_test v1.0.177
+   Compiling rustls-pemfile v2.2.0
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2m 21s
+     Running unittests src/lib.rs (target/debug/deps/geario-e16d8e4b2a39d180)
+
+running 164 tests
+test bytes::buf::buf_impl::tests::buf_tests ... ok
+test bytes::buf::buf_mut::tests::buf_mut_tests ... ok
+test bytes::bvec::tests::bvec_read ... ok
+test bytes::bytes::tests::bytes_read ... ok
+test bytes::bytes::tests::bytes ... ok
+test bytes::pages::tests::page_clone ... ok
+test bytes::pages::tests::page_read ... ok
+test bytes::pages::tests::page_split_to ... ok
+test bytes::pages::tests::pages_copy_to ... ok
+test bytes::pages::tests::pages ... ok
+test bytes::serde::tests::test_deserialize ... ok
+test bytes::serde::tests::test_serialize ... ok
+test bytes::stext_arc::tests::test_arc_str ... ok
+test bytes::storage::tests::bytes_mut ... ok
+test bytes::storage::tests::trimdown ... ok
+test bytes::string::test::test_basics ... ok
+test bytes::string::test::test_deserialize ... ok
+test bytes::string::test::test_from ... ok
+test bytes::string::test::test_hash ... ok
+test bytes::string::test::test_new ... ok
+test bytes::string::test::test_serialize ... ok
+test bytes::string::test::test_split ... ok
+test bytes::string::test::test_try_from ... ok
+test bytes::stvec::tests::cached ... ok
+test bytes::tests::page_size ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ioref] --: Start timer Seconds(1)
+test bytes::pages::tests::pages_methods ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] TEST: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ctx] TEST: Read buf(1024), enable back-pressure
+[TRACE geario::dispatcher] TEST: Service is not ready, register dispatcher
+[TRACE geario::io::ioref] TEST: Stop timer
+[DEBUG geario::io::testing] --: flushing framed transport: 20
+[DEBUG geario::io::testing] --: flushed 20 bytes, remaining: 0
+[TRACE geario::io::io] TEST: Initiate io shutdown FlagsKind(RD_PAUSED | WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] TEST: Shuting down io
+[DEBUG geario::io::testing] TEST: Shutdown complete
+[TRACE geario::dispatcher] TEST: Service is not ready, register dispatcher
+[TRACE geario::dispatcher] TEST: Peer is gone during pause, stopping dispatcher: None
+[DEBUG geario::io::testing] --: flushing framed transport: 20
+[DEBUG geario::io::testing] --: flushed 20 bytes, remaining: 0
+[DEBUG geario::io::testing] close remote socket, waker:true
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::dispatcher] --: Peer is gone, stopping dispatcher: None
+[TRACE geario::io::ioref] --: Stop timer
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::basics ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] SRV: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ioref] SRV: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::dispatcher] SRV: Error occurred, stopping dispatcher
+[TRACE geario::io::ioref] SRV: Stop timer
+[TRACE geario::io::io] SRV: Initiate io shutdown FlagsKind(DIRECT_WR_SUP)
+[DEBUG geario::io::testing] SRV: flushing framed transport: 20
+[DEBUG geario::io::testing] SRV: flushed 20 bytes, remaining: 0
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[TRACE geario::dispatcher] SRV: Service shutdown is completed, stop
+[TRACE geario::io::io] SRV: Io is dropped, terminate connection
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] close remote socket, waker:true
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::err_in_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ioref] --: Start timer Seconds(1)
+[TRACE geario::dispatcher] --: Service readiness check failed, stopping
+[TRACE geario::io::ioref] --: Stop timer
+[TRACE geario::io::io] --: Initiate io shutdown FlagsKind(BUF_R_READY | WR_PAUSED | WR_SEND_OP | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] --: flushing framed transport: 20
+[DEBUG geario::io::testing] --: flushed 20 bytes, remaining: 0
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[TRACE geario::dispatcher] --: Service shutdown is completed, stop
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ioref] TEST: Timer, notify dispatcher
+[TRACE geario::dispatcher] TEST: Service shutdown is completed, stop
+[TRACE geario::io::io] TEST: Io is dropped, terminate connection
+[TRACE geario::io::io] TEST: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::disconnect_during_read_backpressure ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] DBG: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] DBG: flushing framed transport: 1
+[DEBUG geario::io::testing] DBG: flushed 1 bytes, remaining: 0
+[DEBUG geario::io::testing] close remote socket, waker:true
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::err_in_service_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] DBG: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::dispatcher] DBG: Start keep-alive timer Seconds(1)
+[DEBUG geario::io::testing] DBG: flushing framed transport: 20
+[DEBUG geario::io::testing] DBG: flushed 20 bytes, remaining: 0
+[TRACE geario::io::io] DBG: Timer, notify dispatcher
+[TRACE geario::dispatcher] DBG: Keep-alive error, stopping dispatcher
+[TRACE geario::io::ioref] DBG: Stop timer
+[TRACE geario::io::io] DBG: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] DBG: Shuting down io
+[DEBUG geario::io::testing] DBG: Shutdown complete
+[TRACE geario::dispatcher] DBG: Service shutdown is completed, stop
+[TRACE geario::io::io] DBG: Io is dropped, terminate connection
+[TRACE geario::io::io] DBG: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::idle_timeout ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] DBG: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::dispatcher] DBG: Start keep-alive timer Seconds(1)
+[DEBUG geario::io::testing] DBG: flushing framed transport: 8
+[DEBUG geario::io::testing] DBG: flushed 8 bytes, remaining: 0
+[TRACE geario::io::io] DBG: Timer, notify dispatcher
+[TRACE geario::dispatcher] DBG: Keep-alive error, stopping dispatcher
+[TRACE geario::io::ioref] DBG: Stop timer
+[TRACE geario::io::io] DBG: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] DBG: Shuting down io
+[DEBUG geario::io::testing] DBG: Shutdown complete
+[TRACE geario::dispatcher] DBG: Service shutdown is completed, stop
+[TRACE geario::io::io] DBG: Io is dropped, terminate connection
+[TRACE geario::io::io] DBG: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::keepalive ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] DBG: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::dispatcher] DBG: Start keep-alive timer Seconds(2)
+[TRACE geario::io::ioref] DBG: Update timer Seconds(2)
+[DEBUG geario::io::testing] DBG: flushing framed transport: 1
+[DEBUG geario::io::testing] DBG: flushed 1 bytes, remaining: 0
+[TRACE geario::io::io] DBG: Timer, notify dispatcher
+[TRACE geario::dispatcher] DBG: Keep-alive error, stopping dispatcher
+[TRACE geario::io::ioref] DBG: Stop timer
+[TRACE geario::io::io] DBG: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] DBG: Shuting down io
+[DEBUG geario::io::testing] DBG: Shutdown complete
+[TRACE geario::dispatcher] DBG: Service shutdown is completed, stop
+[TRACE geario::io::io] DBG: Io is dropped, terminate connection
+[TRACE geario::io::io] DBG: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::keepalive2 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] TEST: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] TEST: flushing framed transport: 8
+[DEBUG geario::io::testing] TEST: flushed 8 bytes, remaining: 0
+[TRACE geario::dispatcher] DBG: Start keep-alive timer Seconds(2)
+[DEBUG geario::io::testing] DBG: flushing framed transport: 1
+[DEBUG geario::io::testing] DBG: flushed 1 bytes, remaining: 0
+[TRACE geario::dispatcher] DBG: Start keep-alive timer Seconds(2)
+[TRACE geario::io::ioref] DBG: Update timer Seconds(2)
+[DEBUG geario::io::testing] DBG: flushing framed transport: 1
+[DEBUG geario::io::testing] DBG: flushed 1 bytes, remaining: 0
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] DBG: Terminate io with error None
+[DEBUG geario::io::testing] DBG: Shuting down io
+[DEBUG geario::io::testing] DBG: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::dispatcher] DBG: Peer is gone, stopping dispatcher: None
+[TRACE geario::io::ioref] DBG: Stop timer
+[TRACE geario::dispatcher] DBG: Service shutdown is completed, stop
+test dispatcher::tests::keepalive3 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] DBG: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::dispatcher] DBG: Service is not ready, register dispatcher
+[TRACE geario::io::ioref] DBG: Stop timer
+[TRACE geario::dispatcher] DBG: Service is not ready, register dispatcher
+[DEBUG geario::io::testing] DBG: flushing framed transport: 9
+[DEBUG geario::io::testing] DBG: flushed 9 bytes, remaining: 0
+[TRACE geario::dispatcher] DBG: Service is not ready, register dispatcher
+[TRACE geario::dispatcher] DBG: Service is not ready, register dispatcher
+[TRACE geario::io::ioref] DBG: Timer, notify dispatcher
+[DEBUG geario::io::testing] DBG: flushing framed transport: 9
+[DEBUG geario::io::testing] DBG: flushed 0 bytes, remaining: 9
+[DEBUG geario::io::testing] close remote socket, waker:false
+[TRACE geario::io::io] DBG: Terminate io with error None
+[DEBUG geario::io::testing] DBG: Shuting down io
+[DEBUG geario::io::testing] DBG: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::dispatcher] DBG: Service shutdown is completed, stop
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::service_is_not_ready_and_backpressure ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ioref] --: Start timer Seconds(1)
+[DEBUG geario::io::testing] --: flushing framed transport: 20
+[DEBUG geario::io::testing] --: flushed 20 bytes, remaining: 0
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[DEBUG geario::io::testing] --: flushed 4 bytes, remaining: 0
+[TRACE geario::io::io] --: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[TRACE geario::dispatcher] --: Peer is gone, stopping dispatcher: None
+[TRACE geario::io::ioref] --: Stop timer
+[TRACE geario::dispatcher] --: Service shutdown is completed, stop
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] TEST: Timer, notify dispatcher
+[TRACE geario::dispatcher] TEST: Frame read rate 3, extend timer
+[TRACE geario::io::ioref] TEST: Update timer Seconds(1)
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::sink ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::ioref] --: Start timer Seconds(1)
+[DEBUG geario::io::testing] close remote socket, waker:false
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::dispatcher] --: Peer is gone, stopping dispatcher: None
+[TRACE geario::io::ioref] --: Stop timer
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ioref] --: Timer, notify dispatcher
+[TRACE geario::dispatcher] --: Service shutdown is completed, stop
+test dispatcher::tests::unhandled_data ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ioref] TEST: Start timer Seconds(1)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] TEST: flushing framed transport: 65536
+[DEBUG geario::io::testing] TEST: flushed 0 bytes, remaining: 65536
+[DEBUG geario::io::testing] TEST: flushing framed transport: 65536
+[DEBUG geario::io::testing] TEST: flushing framed transport: 55296
+[DEBUG geario::io::testing] TEST: flushed 10240 bytes, remaining: 55296
+[DEBUG geario::io::testing] TEST: flushing framed transport: 55296
+[DEBUG geario::io::testing] TEST: flushing framed transport: 7240
+[DEBUG geario::io::testing] TEST: flushed 48056 bytes, remaining: 7240
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] TEST: Terminate io with error None
+[DEBUG geario::io::testing] TEST: Shuting down io
+[DEBUG geario::io::testing] TEST: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::dispatcher] TEST: Peer is gone, stopping dispatcher: None
+[TRACE geario::io::ioref] TEST: Stop timer
+[TRACE geario::dispatcher] TEST: Service shutdown is completed, stop
+test dispatcher::tests::write_backpressure ... ok
+test error::message::tests::error_message ... ok
+test error::message::tests::error_message_chained ... ok
+test error::message::tests::fmt_diag ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::io] TEST: Timer, notify dispatcher
+[TRACE geario::io::ioref] TEST: Stop timer
+[TRACE geario::io::io] TEST: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] TEST: Shuting down io
+[DEBUG geario::io::testing] TEST: Shutdown complete
+[TRACE geario::dispatcher] TEST: Service shutdown is completed, stop
+[TRACE geario::io::io] TEST: Io is dropped, terminate connection
+[TRACE geario::io::io] TEST: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test dispatcher::tests::read_timeout ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::ctx::tests::ctx_basics ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[DEBUG geario::io::testing] --: flushed 4 bytes, remaining: 0
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::filterptr::tests::drop_filter ... ok
+
+thread 'io::filterptr::tests::miri_filter_access' (1888429) panicked at geario/src/io/filterptr.rs:42:13:
+Filter is not set
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test io::filterptr::tests::miri_filter_access - should panic ... ok
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+test io::filterptr::tests::miri_sealed_filter ... ok
+test io::flags::tests::flags ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] --: flushing framed transport: 7
+[DEBUG geario::io::testing] --: flushed 7 bytes, remaining: 0
+[TRACE geario::io::io] --: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test io::framed::tests::framed ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ctx] SRV: Read buf(10), enable back-pressure
+[TRACE geario::io::ctx] SRV: Read buf(8), enable back-pressure
+[TRACE geario::io::ioref] SRV: Terminate io stream object
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::read ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::ctx] SRV: Read buf(64), enable back-pressure
+[TRACE geario::io::ctx] SRV: Read buf(64), enable back-pressure
+[TRACE geario::io::io] SRV: Io is dropped, terminate connection
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::read_backpressure ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ctx] SRV: Read buf(8), enable back-pressure
+[TRACE geario::io::ctx] SRV: Read buf(9), enable back-pressure
+[TRACE geario::io::ioref] SRV: Terminate io stream object
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::read_notify ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+test error::tests::test_error ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] SRV: Initiate io shutdown FlagsKind(WR_PAUSED | DIRECT_WR_SUP)
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::shutdown ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] SRV: flushing framed transport: 13
+[DEBUG geario::io::testing] SRV: flushed 0 bytes, remaining: 13
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::read_readiness ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::test_basics ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] SRV: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] close remote socket, waker:true
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ctx] SRV: Read buf(8), enable back-pressure
+[DEBUG geario::io::testing] SRV: flushing framed transport: 13
+[DEBUG geario::io::testing] SRV: flushed 0 bytes, remaining: 13
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::test_read ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] SRV: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] SRV: Timer, notify dispatcher
+[TRACE geario::io::io] SRV: Io is dropped, terminate connection
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::test_recv ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] --: flushing framed transport: 20
+[DEBUG geario::io::testing] --: flushed 20 bytes, remaining: 0
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::test_send ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ioref] SRV: Terminate io stream object
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::write ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] SRV: flushing framed transport: 32
+[DEBUG geario::io::testing] SRV: flushed 32 bytes, remaining: 0
+[TRACE geario::io::io] SRV: Io is dropped, terminate connection
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::write_backpressure ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[DEBUG geario::io::testing] --: flushed 4 bytes, remaining: 0
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::ioref::tests::boxed_filter ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[DEBUG geario::io::testing] --: flushed 4 bytes, remaining: 0
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::ioref::tests::filter ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] close remote socket, waker:false
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] SRV: Initiate io shutdown FlagsKind(RD_PAUSED | RD_BACKPRESSURE | BUF_R_READY | DIRECT_WR_SUP)
+[TRACE geario::io::ctx] SRV: Read buf(10), enable back-pressure
+[DEBUG geario::io::testing] SRV: flushing framed transport: 13
+[DEBUG geario::io::testing] SRV: flushed 0 bytes, remaining: 13
+[TRACE geario::io::io] --: Terminate io with error Some(Custom { kind: Other, error: "err" })
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test io::ioref::tests::on_disconnect ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] SRV: flushing framed transport: 13
+[DEBUG geario::io::testing] SRV: flushed 13 bytes, remaining: 0
+[DEBUG geario::io::testing] SRV: Shuting down io
+[DEBUG geario::io::testing] SRV: Shutdown complete
+[TRACE geario::io::io] --: Terminate io with error Some(Custom { kind: Other, error: "err" })
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::io] --: Terminate io with error Some(Custom { kind: Other, error: "err" })
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[DEBUG geario::io::testing] --: flushed 4 bytes, remaining: 0
+[DEBUG geario::io::testing] --: flushing framed transport: 4
+[TRACE geario::io::io] --: Terminate io with error Some(Custom { kind: Other, error: "err" })
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[TRACE geario::io::ioref] --: Terminate io stream object
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::ioref::tests::utils ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[DEBUG geario::io::testing] close remote socket, waker:false
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test io::ioref::tests::write_to_closed_io ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::testing::tests::basic ... ok
+test io::tests::test_fmt ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[DEBUG geario::io::testing] drop remote socket
+[INFO  geario::service::cfg] --: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] --: Io is dropped, terminate connection
+[TRACE geario::io::io] --: Terminate io with error None
+[DEBUG geario::io::testing] --: Shuting down io
+[DEBUG geario::io::testing] --: Shutdown complete
+[DEBUG geario::io::testing] drop remote socket
+test io::utils::tests::test_null_filter ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test net::channel::tests::test_oneshot ... ok
+test net::connect::error::tests::connect_error_clone ... ok
+test net::connect::error::tests::error_diagnostic ... ok
+test net::connect::message::tests::address ... ok
+test net::connect::message::tests::connect ... ok
+test net::connect::resolve::tests::resolver ... ignored
+test net::connect::uri::tests::port_tests ... ok
+[TRACE geario::net::polling::reactor] New poll driver
+[TRACE geario::net::polling::reactor] New poll driver
+test net::tests::completed_runtime_releases_current_reactor ... ok
+[TRACE geario::net::polling::reactor] New poll driver
+
+thread 'net::tests::nested_reactor_is_rejected_without_replacing_outer_scope' (1888461) panicked at geario/src/net/mod.rs:93:9:
+reactor is already set
+test net::tests::nested_reactor_is_rejected_without_replacing_outer_scope ... ok
+[TRACE geario::net::polling::reactor] New poll driver
+
+thread 'net::tests::reactor_scope_is_restored_after_unwind' (1888462) panicked at geario/src/net/mod.rs:212:38:
+test reactor unwind
+test net::tests::reactor_scope_is_restored_after_unwind ... ok
+test net::uring::stream::send_config_tests::diagnostic_counters_do_not_contend_or_mix_workers ... ok
+test net::uring::stream::send_config_tests::experimental_settings_preserve_safe_batch_limits ... ok
+test net::uring::stream::send_config_tests::gather_keeps_single_page_allocation_free_and_preserves_tail_order ... ok
+test net::uring::stream::send_config_tests::gather_stops_at_the_byte_budget_without_consuming_the_tail ... ok
+test server::net::builder::tests::test_bind_addr ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test server::net::builder::tests::test_debug ... ok
+test server::net::socket::tests::socket_addr ... ok
+test server::net::socket::tests::uds ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::and_then::tests::test_call ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::and_then::tests::test_factory ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::and_then::tests::test_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::and_then::tests::test_ready2 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::apply::tests::test_call ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::apply::tests::test_call_svc ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::apply::tests::test_create ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::apply::tests::test_create_chain ... ok
+
+thread 'service::cfg::tests::access_cfg_in_building_state' (1888482) panicked at geario/src/service/cfg.rs:384:5:
+TEST: Cannot access shared config while building
+test service::cfg::tests::access_cfg_in_building_state - should panic ... ok
+[INFO  geario::service::cfg] --: Configuration "TEST" does not exist, using default
+[INFO  geario::service::cfg] TEST2: Configuration "TEST" does not exist, using default
+[INFO  geario::service::cfg] TEST3: Configuration "TEST" does not exist, using default
+test service::cfg::tests::shared_cfg ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::ctx::tests::test_pipeline_binding_after_shutdown ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::ctx::tests::test_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::ctx::tests::test_ready_after_shutdown ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::ctx::tests::test_ready_on_drop ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::ctx::tests::test_shared_call ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_ready::tests::test_fn_readiness ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_service::tests::test_fn_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_service::tests::test_fn_service_comp ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_service::tests::test_fn_service_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_service::tests::test_fn_service_with_config ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::fn_shutdown::tests::test_fn_shutdown ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map::tests::test_factory ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map::tests::test_pipeline ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map::tests::test_pipeline_factory ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map::tests::test_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_err::tests::test_factory ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_err::tests::test_pipeline ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_err::tests::test_pipeline_factory ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_err::tests::test_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_err::tests::test_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_init_err::tests::map_init_err ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::map_init_err::tests::map_init_err2 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::middleware::tests::fn_middleware_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::middleware::tests::middleware ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::middleware::tests::middleware_apply ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::middleware::tests::middleware_chain ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test service::middleware::tests::stack ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::bstream::tests::test_closed ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::bstream::tests::test_eof ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::bstream::tests::test_sender_clone ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::bstream::tests::test_unread_data ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::condition::tests::notify_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::condition::tests::notify_with_and_lock_ready ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::condition::tests::test_condition ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::condition::tests::test_condition_poll ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::condition::tests::test_condition_with ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::inplace::tests::test_inplace ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::mpsc::tests::test_close ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::mpsc::tests::test_mpsc ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::oneshot::tests::test_oneshot ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::channel::pool::tests::test_pool ... ok
+test util::future::either::test::either ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::future::join::tests::join_tests ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::future::on_drop::test::on_drop ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::future::select::tests::select_tests ... ok
+test util::services::extensions::test_clear ... ok
+test util::services::extensions::test_composition ... ok
+test util::services::extensions::test_debug ... ok
+test util::services::extensions::test_extend ... ok
+test util::services::extensions::test_extensions ... ok
+test util::services::extensions::test_integers ... ok
+test util::services::extensions::test_remove ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::services::inflight::tests::test_middleware ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::services::inflight::tests::test_middleware2 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::services::inflight::tests::test_service ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::task::test::yield_test ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::lowres_time_does_not_immediately_change ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::lowres_time_updates_after_resolution_interval ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::system_time_service_time_does_not_immediately_change ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::system_time_service_time_updates_after_resolution_interval ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::io::io] SRV: Io is dropped, terminate connection
+[TRACE geario::io::io] SRV: Terminate io with error None
+[DEBUG geario::io::testing] drop remote socket
+[DEBUG geario::io::testing] drop remote socket
+test io::io::tests::shutdown_flushes_write_buf_with_read_backpressure ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::test_interval ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::test_deadline ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::test_sleep_0 ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::tests::test_timeout_checked ... ok
+[ERROR geario::util::time::types] time Duration is too large 18446744073709551615s
+test util::time::types::tests::time_types ... ok
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+test util::time::wheel::tests::test_timer ... ok
+test util::time::tests::test_interval_one_sec ... ok
+
+test result: ok. 163 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 15.62s
+
+     Running tests/direct_write.rs (target/debug/deps/direct_write-6d441c16e78085a7)
+
+running 2 tests
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[TRACE geario::net::uring::connect] QUEUED: connect-op is completed 0 result: Ok(0), addr: Some(127.0.0.1:38357)
+[INFO  geario::service::cfg] QUEUED: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::net::uring::connect] DIRECT: connect-op is completed 0 result: Ok(0), addr: Some(127.0.0.1:35659)
+[INFO  geario::service::cfg] DIRECT: Configuration "IO Configuration" does not exist, using default
+[INFO  geario::service::cfg] ECHO: Configuration "IO Configuration" does not exist, using default
+[INFO  geario::service::cfg] ECHO: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] DIRECT: Io is dropped, terminate connection
+[TRACE geario::io::io] DIRECT: Terminate io with error None
+[TRACE geario::net::uring::stream] DIRECT: Recv to pause (Fd(10))
+[TRACE geario::net::uring::stream] DIRECT: Unclosed sockets Ok(SockAddr { ss_family: 2, len: 16 })
+[TRACE geario::net::uring::stream] ECHO: Unclosed sockets Ok(SockAddr { ss_family: 2, len: 16 })
+[TRACE geario::io::io] QUEUED: Io is dropped, terminate connection
+[TRACE geario::io::io] QUEUED: Terminate io with error None
+[TRACE geario::net::uring::stream] QUEUED: Recv to pause (Fd(9))
+[TRACE geario::net::uring::stream] QUEUED: Unclosed sockets Ok(SockAddr { ss_family: 2, len: 16 })
+[TRACE geario::net::uring::stream] ECHO: Unclosed sockets Ok(SockAddr { ss_family: 2, len: 16 })
+test writes_straight_to_the_socket_without_buffering ... ok
+test declines_when_bytes_are_already_queued ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/uring_vectored.rs (target/debug/deps/uring_vectored-7e630e70d8cec49b)
+
+running 2 tests
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::net::uring::reactor] New io-uring driver with single-issuer, coop-taskrun, defer-taskrun
+[INFO  geario::service::cfg] BLOB: Configuration "IO Configuration" does not exist, using default
+[INFO  geario::service::cfg] BLOB: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] BLOB: Terminate io with error None
+[TRACE geario::net::uring::stream] BLOB: Close (Fd(11))
+[INFO  geario::service::cfg] BLOB: Configuration "IO Configuration" does not exist, using default
+[TRACE geario::io::io] BLOB: Terminate io with error Some(Os { code: 104, kind: ConnectionReset, message: "Connection reset by peer" })
+[TRACE geario::net::uring::stream] BLOB: Unclosed sockets Err(Os { code: 107, kind: NotConnected, message: "Transport endpoint is not connected" })
+test a_disconnect_midresponse_leaves_the_server_healthy ... ok
+[TRACE geario::io::io] BLOB: Terminate io with error None
+WRITE_PATH submits=5 short=5 cancels=0
+[TRACE geario::net::uring::stream] BLOB: Unclosed sockets Err(Os { code: 107, kind: NotConnected, message: "Transport endpoint is not connected" })
+test a_multipage_response_survives_a_piecewise_socket ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.47s
+

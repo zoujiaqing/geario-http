@@ -1,3 +1,5 @@
+#![cfg(feature = "client")]
+
 //! The parts of the client ABI a host can get wrong.
 
 use std::ffi::c_void;

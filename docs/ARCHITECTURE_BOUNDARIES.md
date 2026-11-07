@@ -34,12 +34,18 @@ errors remain protocol-engine responsibilities.
 
 ### Feature boundaries first
 
-The http1 feature currently does not gate the public h1 module in lib.rs.
-Hyper-only users therefore still compile native protocol code. The FFI
-dependency also currently enables geario-http defaults. Before claiming a lean
-Hyper-only build, gate native modules and dependent exports consistently, update
-internal consumers and test no-default/server/client/hyper-only/FFI combinations.
-Do not merely disable defaults in Cargo.toml and call the split complete.
+Native modules and their public request/response/type exports are now gated by
+`http1`. Native-only dependencies are optional. Default Rust consumers still
+get the native h1 server; hyper-only consumers use `default-features = false`.
+FFI also disables those defaults: `server` selects hyper h1/h2, `client` selects
+hyper h1/h2 plus TLS and standalone proxy URL parsing, and `native-h1` explicitly
+selects the native server. `geario_http::client::proxy` remains a compatible
+re-export of `geario_http::proxy` for native clients.
+
+Run `python3 scripts/check-feature-boundaries.py` after building the feature
+matrix. It resolves isolated production consumers, excluding dev dependencies,
+and rejects accidental native parser or TLS/hyper backend activation. Library
+checks precede test builds, so dev-feature unification cannot hide missing flags.
 
 The public geario test server resides in server/net/test.rs and uses UUIDs;
 it is not cfg(test)-only. Moving UUID to dev-dependencies alone breaks normal
@@ -85,3 +91,20 @@ HTTP/3 maps HTTP semantics onto QUIC, not TCP. See
 
 No QUIC dependency, H3 ABI or speculative generic engine interface is added by
 this cleanup. This leaves room for HTTP/3 without making H1 carry its complexity.
+
+
+## Product boundary (2026-11-07)
+
+Geario is the independently consumable user-space network runtime. Tokio is a
+reference for reliability and network-runtime efficiency, not a promise of API
+compatibility or complete ecosystem parity. Geario-http is a protocol/FFI
+reference and acceptance workload on Rust 1.99.x; HTTP-specific types and policy
+must not migrate into the runtime. An example still needs production-quality
+buffer ownership, cancellation, threading and shutdown contracts when used as
+an FFI reference.
+
+OS networking services are a plausible user-space consumer. Kernel integration
+is not supported by today's std/socket/epoll/io_uring/IOCP implementation and
+requires a separate execution, allocation, driver and safety architecture.
+TCP byte-stream support does not by itself supply UDP, routing, packet filters,
+network configuration, isolation or a complete system network control plane.

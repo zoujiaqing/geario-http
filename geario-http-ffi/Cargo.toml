@@ -20,10 +20,23 @@ workspace = true
 [features]
 default = ["server", "client"]
 # The server runs hyper over geario: HTTP/1.1 and h2c on one port.
-server = ["geario-http/hyper-server", "geario-http/hyper-http1", "geario-http/hyper-http2"]
-native-h1 = ["geario-http/server"]
+server = [
+    "dep:hyper",
+    "hyper/server",
+    "hyper/http1",
+    "hyper/http2",
+    "dep:http-body-util",
+    "dep:async-channel",
+    "dep:futures-core","geario-http/hyper-server",
+    "geario-http/hyper-http1",
+    "geario-http/hyper-http2",
+]
+native-h1 = ["geario-http/server", "dep:async-channel"]
 client = [
-    "geario-http/client",
+    "dep:async-channel",
+    "dep:hyper", "hyper/client", "hyper/http1", "hyper/http2",
+    "dep:http-body-util", "dep:tls_rustls", "dep:webpki-roots", "dep:futures-core",
+    "geario-http/proxy",
     "geario-http/hyper-client",
     "geario-http/hyper-http1",
     "geario-http/hyper-http2",
@@ -34,15 +47,18 @@ client = [
 [dependencies]
 geario = { workspace = true }
 geario-http = { workspace = true }
-hyper = { workspace = true, features = ["http1", "http2", "server", "client"] }
-http-body-util = { workspace = true }
-async-channel = { workspace = true }
-futures-core = { workspace = true }
+hyper = { workspace = true, optional = true }
+http-body-util = { workspace = true, optional = true }
+async-channel = { workspace = true, optional = true }
+futures-core = { workspace = true, optional = true }
 log = { workspace = true }
-tls_rustls = { workspace = true }
-webpki-roots = { workspace = true }
+tls_rustls = { workspace = true, optional = true }
+webpki-roots = { workspace = true, optional = true }
 
 [dev-dependencies]
+# Client connector tests serve real h1/h2 peers without enabling native h1.
+geario-http = { workspace = true, features = ["hyper-full"] }
+hyper = { workspace = true, features = ["http1", "http2", "server", "client"] }
 rcgen = { workspace = true }
 
 [profile.release]

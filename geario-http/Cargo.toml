@@ -24,15 +24,37 @@ default = ["http1", "server"]
 full = ["http1", "client", "server"]
 
 # Protocol versions
-http1 = []
+http1 = [
+    "dep:foldhash",
+    "dep:futures-core",
+    "dep:httpdate",
+    "dep:atoi_simd",
+    "dep:httparse",
+    "dep:encoding_rs",
+    "dep:mime",
+    "dep:percent-encoding",
+    "dep:base64",
+    "dep:serde_urlencoded",
+    "dep:serde_json",
+    "dep:ntex-httparse",
+    "dep:bitflags",
+    "dep:pin-project-lite",
+    "dep:derive_more",
+    "dep:itoa",
+    "dep:log",
+    "dep:serde",
+    "dep:thiserror",
+]
 
 # Roles
-client = ["http1"]
+client = ["http1", "proxy"]
+# URL validation shared by native and hyper clients, without the native codec.
+proxy = []
 server = ["http1"]
 
 # Extras
-compress = ["flate2"]
-cookie = ["coo-kie", "coo-kie/percent-encode"]
+compress = ["http1", "flate2"]
+cookie = ["http1", "coo-kie", "coo-kie/percent-encode"]
 trace = []
 
 # TLS through geario's rustls layer.
@@ -55,32 +77,32 @@ hyper-full = ["hyper-http1", "hyper-http2", "hyper-server", "hyper-client"]
 
 [dependencies]
 geario = { workspace = true }
-foldhash = { workspace = true }
-futures-core = { workspace = true }
+foldhash = { workspace = true, optional = true }
+futures-core = { workspace = true, optional = true }
 http = { workspace = true }
-httpdate = { workspace = true }
-atoi_simd = { workspace = true }
-httparse = { workspace = true }
-encoding_rs = { workspace = true }
-mime = { workspace = true }
+httpdate = { workspace = true, optional = true }
+atoi_simd = { workspace = true, optional = true }
+httparse = { workspace = true, optional = true }
+encoding_rs = { workspace = true, optional = true }
+mime = { workspace = true, optional = true }
 nanorand = { workspace = true, optional = true }
-percent-encoding = { workspace = true }
-base64 = { workspace = true }
-serde_urlencoded = { workspace = true }
+percent-encoding = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+serde_urlencoded = { workspace = true, optional = true }
 flate2 = { workspace = true, optional = true }
-serde_json = { workspace = true }
+serde_json = { workspace = true, optional = true }
 coo-kie = { workspace = true, optional = true }
-ntex-httparse = { workspace = true }
-bitflags = { workspace = true }
-pin-project-lite = { workspace = true }
+ntex-httparse = { workspace = true, optional = true }
+bitflags = { workspace = true, optional = true }
+pin-project-lite = { workspace = true, optional = true }
 hyper = { workspace = true, optional = true }
 tls_rustls = { workspace = true, optional = true }
 webpki-roots = { workspace = true, optional = true }
-derive_more = { workspace = true, features = ["debug"] }
-itoa = { workspace = true }
-log = { workspace = true }
-serde = { workspace = true }
-thiserror = { workspace = true }
+derive_more = { workspace = true, optional = true, features = ["debug"] }
+itoa = { workspace = true, optional = true }
+log = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true, optional = true }
 
 [dev-dependencies]
 # Only to prove a transport test against a known-good transport.

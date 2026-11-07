@@ -11,6 +11,7 @@ pub struct GearioHttpSlice {
 }
 
 impl GearioHttpSlice {
+    #[cfg(any(feature = "server", feature = "client", feature = "native-h1"))]
     #[inline]
     pub(crate) fn borrow(b: &[u8]) -> Self {
         GearioHttpSlice {

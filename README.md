@@ -79,3 +79,16 @@ MIT OR Apache-2.0, matching upstream ntex. See `NOTICE` for attribution.
 
 - [Transport boundaries and HTTP/3 direction](docs/ARCHITECTURE_BOUNDARIES.md)
 - [中文说明](README.zh-Hans.md)
+
+
+### Isolated protocol builds
+
+The default features retain the native HTTP/1 server. To use only hyper on
+geario, disable defaults and select `hyper-full` (or individual hyper roles and
+versions). Native request/response/types APIs require `http1`; `server` and
+`client` enable it automatically. `proxy` provides URL validation independently.
+
+FFI defaults provide hyper server/client; `--no-default-features --features server`
+contains no native HTTP codec or TLS client, and `--features native-h1` explicitly
+selects the native backend. Rust 1.99 or newer is required. Check the isolated
+production dependency graph with `python3 scripts/check-feature-boundaries.py`.

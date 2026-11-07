@@ -15,7 +15,7 @@ use http_body_util::Full;
 use hyper::body::Bytes;
 use hyper::client::conn::{http1, http2};
 
-use geario_http::client::proxy::ProxyTarget;
+use geario_http::proxy::ProxyTarget;
 
 use super::connect::{Fail, Origin, Sender, Tls, connect};
 

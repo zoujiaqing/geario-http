@@ -7,7 +7,7 @@ authors = ["zoujiaqing <zoujiaqing@gmail.com>"]
 repository = "https://github.com/zoujiaqing/geario-http"
 license = "MIT OR Apache-2.0"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.99"
 
 [workspace.lints.rust]
 async_fn_in_trait = { level = "allow", priority = -1 }
@@ -18,7 +18,7 @@ missing_debug_implementations = "deny"
 unexpected_cfgs = { level = "warn", priority = -2, check-cfg = ['cfg(docsrs_dep)'] }
 
 [workspace.dependencies]
-geario-http = { path = "geario-http" }
+geario-http = { path = "geario-http", default-features = false }
 geario-http-ffi = { path = "geario-http-ffi" }
 
 # geario sits beside this checkout. It is a path dependency rather than a

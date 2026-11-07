@@ -1,0 +1,6 @@
+PASS geario-http: hyper-rt
+PASS geario-http: hyper-full
+PASS geario-http-ffi: server
+PASS geario-http-ffi: client
+PASS geario-http-ffi: server,client
+PASS geario-http-ffi: native-h1

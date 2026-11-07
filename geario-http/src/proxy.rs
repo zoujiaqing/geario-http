@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use geario_http::Uri;
+use http::Uri;
 
 /// Where the proxy is, once its URL has been checked.
 #[derive(Clone, PartialEq, Eq)]

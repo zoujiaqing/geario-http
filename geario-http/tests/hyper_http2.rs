@@ -4,7 +4,11 @@
 //! timer. h2 exercises parts of the adapter that h1 never reaches: the
 //! executor, because every stream is a spawned task, and concurrent writes
 //! from several streams interleaving on one connection.
-#![cfg(all(feature = "hyper-rt", feature = "server"))]
+#![cfg(all(
+    feature = "hyper-http2",
+    feature = "hyper-server",
+    feature = "hyper-client"
+))]
 
 use std::convert::Infallible;
 

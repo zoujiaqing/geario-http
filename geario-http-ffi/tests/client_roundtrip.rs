@@ -1,3 +1,5 @@
+#![cfg(all(feature = "client", feature = "server"))]
+
 //! The FFI client against a real server, driven the way a C host would.
 //!
 //! client_abi.rs covers the option/struct validation; this covers a request

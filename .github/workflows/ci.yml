@@ -92,7 +92,8 @@ jobs:
         working-directory: geario-http
         run: |
           set -e
-          for f in "" "http1" "server" "client" "full" "full,compress" "full,cookie" \
+          cargo check -p geario-http --lib --no-default-features
+          for f in "" "proxy" "rustls" "compress" "cookie" "http1" "server" "client" "full" "full,compress" "full,cookie" \
                    "full,rustls" "full,ws" "full,ws,rustls,compress,cookie" \
                    "hyper-rt" "hyper-http1,hyper-server" "hyper-http2,hyper-client" \
                    "hyper-full" "full,rustls,hyper-full"; do
@@ -100,9 +101,16 @@ jobs:
             if [ -z "$f" ]; then
               cargo check -p geario-http --all-targets
             else
+              cargo check -p geario-http --lib --no-default-features --features "$f"
               cargo check -p geario-http --all-targets --no-default-features --features "$f"
             fi
           done
+
+          for f in "" "server" "client" "native-h1" "server,client,native-h1"; do
+            cargo check -p geario-http-ffi --lib --no-default-features --features "$f"
+            cargo test -p geario-http-ffi --no-default-features --features "$f"
+          done
+          python3 scripts/check-feature-boundaries.py
 
   ffi:
     name: ffi C examples (${{ matrix.os }})

@@ -1,0 +1,102 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /root/geario-validation-20261107/geario-http/geario-http-ffi/Cargo.toml
+workspace: /root/geario-validation-20261107/geario-http/Cargo.toml
+   Compiling futures-core v0.3.34
+   Compiling tokio-macros v2.7.2
+   Compiling mio v1.2.3
+   Compiling once_cell v1.21.4
+   Compiling smallvec v1.16.0
+   Compiling tracing-core v0.1.36
+   Compiling tokio v1.53.1
+   Compiling httparse v1.10.1
+   Compiling futures-sink v0.3.34
+   Compiling tracing v0.1.44
+   Compiling indexmap v2.14.2
+   Compiling http-body v1.1.0
+   Compiling fnv v1.0.7
+   Compiling try-lock v0.2.5
+   Compiling want v0.3.1
+   Compiling parking_lot_core v0.9.12
+   Compiling futures-channel v0.3.34
+   Compiling geario v0.1.0 (/root/geario-validation-20261107/geario/geario)
+   Compiling httpdate v1.0.3
+   Compiling async-channel v2.5.0
+   Compiling parking_lot v0.12.5
+   Compiling geario-polling v0.1.0 (/root/geario-validation-20261107/geario/geario-polling)
+   Compiling tokio-util v0.7.19
+   Compiling h2 v0.4.19
+   Compiling geario-macros v0.1.0 (/root/geario-validation-20261107/geario/geario-macros)
+   Compiling hyper v1.11.1
+   Compiling futures-util v0.3.34
+   Compiling hyper-util v0.1.20
+   Compiling bincode v1.3.3
+   Compiling http-body-util v0.1.5
+   Compiling geario-http v0.1.0 (/root/geario-validation-20261107/geario-http/geario-http)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1m 00s
+     Running unittests src/lib.rs (/root/geario-validation-20261107/geario/target/debug/deps/geario_http-ed1621b744fc0723)
+
+running 7 tests
+test hyper_rt::timer::tests::a_sub_millisecond_deadline_still_elapses ... ok
+test hyper_rt::timer::tests::sleeps_for_about_the_requested_time ... ok
+test hyper_rt::transport::tests::flush_drains_small_writes_and_shutdown_delivers_tail ... ok
+test hyper_rt::transport::tests::oversized_writes_resume_without_losing_bytes ... ok
+test hyper_rt::timer::tests::reset_extends_a_pending_sleep ... ok
+test hyper_rt::transport::tests::vectored_write_takes_every_slice_then_backpressures ... ok
+test hyper_rt::transport::tests::reads_partial_buffers_and_empty_cursor ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+
+     Running tests/https.rs (/root/geario-validation-20261107/geario/target/debug/deps/https-43f9cf399a6a3e05)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/hyper_http2.rs (/root/geario-validation-20261107/geario/target/debug/deps/hyper_http2-721d125dde15e272)
+
+running 4 tests
+test a_cancelled_stream_leaves_the_others_intact ... ok
+test concurrent_streams_on_one_connection ... ok
+test request_and_response_over_h2 ... ok
+test a_slow_reader_does_not_stall_a_concurrent_stream ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+
+     Running tests/hyper_serve_auto.rs (/root/geario-validation-20261107/geario/target/debug/deps/hyper_serve_auto-7cd66577d9610b4b)
+
+running 4 tests
+test a_request_line_is_http1_without_waiting_for_24_bytes ... ok
+test http1_is_served_as_http1 ... ok
+test http2_prior_knowledge_is_served_as_http2 ... ok
+test a_preface_split_across_writes_is_still_http2 ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/hyper_tokio_control.rs (/root/geario-validation-20261107/geario/target/debug/deps/hyper_tokio_control-dc5f191fe3950583)
+
+running 1 test
+test http1_streaming_post_and_keep_alive_on_tokio ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/hyper_transport.rs (/root/geario-validation-20261107/geario/target/debug/deps/hyper_transport-a90b6c183e7c327c)
+
+running 3 tests
+test http1_streaming_post_and_keep_alive ... ok
+test http2_concurrent_streams_cross_flow_control_window ... ok
+test unrequested_disconnect_is_still_an_error ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/proxy.rs (/root/geario-validation-20261107/geario/target/debug/deps/proxy-d1f54b3546ddfebd)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/websocket.rs (/root/geario-validation-20261107/geario/target/debug/deps/websocket-eb0abfc00341eef6)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

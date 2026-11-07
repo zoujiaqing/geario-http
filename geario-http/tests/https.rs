@@ -1,5 +1,5 @@
 //! HTTPS through the rustls connector.
-#![cfg(feature = "rustls")]
+#![cfg(all(feature = "rustls", feature = "client"))]
 
 use geario_http::client::Client;
 
