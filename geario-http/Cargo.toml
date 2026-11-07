@@ -47,7 +47,7 @@ http1 = [
 ]
 
 # Roles
-client = ["http1", "proxy"]
+client = ["http1", "proxy", "geario/http-compat"]
 # URL validation shared by native and hyper clients, without the native codec.
 proxy = []
 server = ["http1"]

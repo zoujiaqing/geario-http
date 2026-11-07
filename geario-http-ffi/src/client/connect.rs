@@ -9,10 +9,9 @@
 
 use std::sync::Arc;
 
-use geario::io::types::HttpProtocol;
 use geario::io::{Filter, Io};
 use geario::net::connect::{Connect, ConnectError, connect as tcp};
-use geario::tls::rustls::TlsClientFilter;
+use geario::tls::{AlpnProtocol, rustls::TlsClientFilter};
 use geario::util::time::{Millis, timeout_checked};
 use geario_http::hyper_rt::{GearioExecutor, GearioTimer, GearioTransport};
 use geario_http::proxy::ProxyTarget;
@@ -204,7 +203,10 @@ async fn open(
         .map_err(|e| classify_tls(&e))?;
 
     // ALPN decides the protocol; the URL never does.
-    let h2 = matches!(io.query::<HttpProtocol>().get(), Some(HttpProtocol::Http2));
+    let h2 = io
+        .query::<AlpnProtocol>()
+        .as_ref()
+        .is_some_and(|protocol| protocol.0 == b"h2");
     if tls.require_h2 && !h2 {
         return Err(Fail::new(
             GEARIO_HTTP_ERR_ALPN_NO_H2,
@@ -434,7 +436,11 @@ mod tests {
             let Ok(io) = TlsServerFilter::create(io, cfg, Millis(5_000)).await else {
                 return;
             };
-            if matches!(io.query::<HttpProtocol>().get(), Some(HttpProtocol::Http2)) {
+            if io
+                .query::<AlpnProtocol>()
+                .as_ref()
+                .is_some_and(|protocol| protocol.0 == b"h2")
+            {
                 let _ = hyper::server::conn::http2::Builder::new(GearioExecutor)
                     .serve_connection(GearioTransport::new(io), service_fn(answer))
                     .await;

@@ -23,7 +23,7 @@ geario-http-ffi = { path = "geario-http-ffi" }
 
 # geario sits beside this checkout. It is a path dependency rather than a
 # version so the two can move together while the IO API is still settling.
-geario = { path = "../geario/geario" }
+geario = { path = "../geario/geario", default-features = false }
 
 ntex-httparse = "2.1.0"
 
